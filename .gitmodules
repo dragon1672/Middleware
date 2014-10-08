@@ -1,0 +1,3 @@
+[submodule "luacppinterface"]
+	path = luacppinterface
+	url = https://github.com/davidsiaw/luacppinterface/
