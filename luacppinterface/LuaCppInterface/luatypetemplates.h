@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <lua.h>
 
+#pragma warning( push )
+#pragma warning( disable : 4244 )
+
 template<typename SIG>
 class LuaFunction;
 
@@ -145,5 +148,7 @@ DEFINE_TYPE_TEMPLATE_FOR(float,, lua_pushnumber(state.get(), param), float res =
 DEFINE_TYPE_TEMPLATE_FOR(double,, lua_pushnumber(state.get(), param), double res = lua_tonumber(state.get(), -1))
 
 DEFINE_TYPE_TEMPLATE_FOR(bool,, lua_pushboolean(state.get(), param), bool res = lua_toboolean(state.get(), -1) != 0)
+
+#pragma warning(pop)
 
 #endif // LUATYPETEMPLATES_H
