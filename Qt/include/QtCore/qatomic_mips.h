@@ -1,38 +1,39 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Copyright (C) 2011 Thiago Macieira <thiago@kde.org>
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -42,107 +43,124 @@
 #ifndef QATOMIC_MIPS_H
 #define QATOMIC_MIPS_H
 
-QT_BEGIN_HEADER
+#include <QtCore/qgenericatomic.h>
 
 QT_BEGIN_NAMESPACE
 
-#define Q_ATOMIC_INT_REFERENCE_COUNTING_IS_ALWAYS_NATIVE
-
-inline bool QBasicAtomicInt::isReferenceCountingNative()
-{ return true; }
-inline bool QBasicAtomicInt::isReferenceCountingWaitFree()
-{ return false; }
-
-#define Q_ATOMIC_INT_TEST_AND_SET_IS_ALWAYS_NATIVE
-
-inline bool QBasicAtomicInt::isTestAndSetNative()
-{ return true; }
-inline bool QBasicAtomicInt::isTestAndSetWaitFree()
-{ return false; }
-
-#define Q_ATOMIC_INT_FETCH_AND_STORE_IS_ALWAYS_NATIVE
-
-inline bool QBasicAtomicInt::isFetchAndStoreNative()
-{ return true; }
-inline bool QBasicAtomicInt::isFetchAndStoreWaitFree()
-{ return false; }
-
-#define Q_ATOMIC_INT_FETCH_AND_ADD_IS_ALWAYS_NATIVE
-
-inline bool QBasicAtomicInt::isFetchAndAddNative()
-{ return true; }
-inline bool QBasicAtomicInt::isFetchAndAddWaitFree()
-{ return false; }
-
-#define Q_ATOMIC_POINTER_TEST_AND_SET_IS_ALWAYS_NATIVE
-
-template <typename T>
-Q_INLINE_TEMPLATE bool QBasicAtomicPointer<T>::isTestAndSetNative()
-{ return true; }
-template <typename T>
-Q_INLINE_TEMPLATE bool QBasicAtomicPointer<T>::isTestAndSetWaitFree()
-{ return false; }
-
-#define Q_ATOMIC_POINTER_FETCH_AND_STORE_IS_ALWAYS_NATIVE
-
-template <typename T>
-Q_INLINE_TEMPLATE bool QBasicAtomicPointer<T>::isFetchAndStoreNative()
-{ return true; }
-template <typename T>
-Q_INLINE_TEMPLATE bool QBasicAtomicPointer<T>::isFetchAndStoreWaitFree()
-{ return false; }
-
-#define Q_ATOMIC_POINTER_FETCH_AND_ADD_IS_ALWAYS_NATIVE
-
-template <typename T>
-Q_INLINE_TEMPLATE bool QBasicAtomicPointer<T>::isFetchAndAddNative()
-{ return true; }
-template <typename T>
-Q_INLINE_TEMPLATE bool QBasicAtomicPointer<T>::isFetchAndAddWaitFree()
-{ return false; }
-
-#if defined(Q_CC_GNU) && !defined(Q_OS_IRIX)
-
-#if _MIPS_SIM == _ABIO32
-#define SET_MIPS2 ".set mips2\n\t"
-#else
-#define SET_MIPS2
+#if 0
+// silence syncqt warnings
+QT_END_NAMESPACE
+#pragma qt_sync_skip_header_check
+#pragma qt_sync_stop_processing
 #endif
 
-inline bool QBasicAtomicInt::ref()
+#define Q_ATOMIC_INT_REFERENCE_COUNTING_IS_ALWAYS_NATIVE
+#define Q_ATOMIC_INT_TEST_AND_SET_IS_ALWAYS_NATIVE
+#define Q_ATOMIC_INT_FETCH_AND_STORE_IS_ALWAYS_NATIVE
+#define Q_ATOMIC_INT_FETCH_AND_ADD_IS_ALWAYS_NATIVE
+
+#define Q_ATOMIC_INT32_IS_SUPPORTED
+#define Q_ATOMIC_INT32_REFERENCE_COUNTING_IS_ALWAYS_NATIVE
+#define Q_ATOMIC_INT32_TEST_AND_SET_IS_ALWAYS_NATIVE
+#define Q_ATOMIC_INT32_FETCH_AND_STORE_IS_ALWAYS_NATIVE
+#define Q_ATOMIC_INT32_FETCH_AND_ADD_IS_ALWAYS_NATIVE
+
+#define Q_ATOMIC_POINTER_TEST_AND_SET_IS_ALWAYS_NATIVE
+#define Q_ATOMIC_POINTER_FETCH_AND_STORE_IS_ALWAYS_NATIVE
+#define Q_ATOMIC_POINTER_FETCH_AND_ADD_IS_ALWAYS_NATIVE
+
+template <int size> struct QBasicAtomicOps: QGenericAtomicOps<QBasicAtomicOps<size> >
 {
-    register int originalValue;
-    register int newValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "0:\n"
+    template <typename T>
+    static void acquireMemoryFence(const T &) Q_DECL_NOTHROW;
+    template <typename T>
+    static void releaseMemoryFence(const T &) Q_DECL_NOTHROW;
+    template <typename T>
+    static void orderedMemoryFence(const T &) Q_DECL_NOTHROW;
+
+    static inline Q_DECL_CONSTEXPR bool isReferenceCountingNative() Q_DECL_NOTHROW { return true; }
+    template <typename T> static bool ref(T &_q_value) Q_DECL_NOTHROW;
+    template <typename T> static bool deref(T &_q_value) Q_DECL_NOTHROW;
+
+    static inline Q_DECL_CONSTEXPR bool isTestAndSetNative() Q_DECL_NOTHROW { return true; }
+    static inline Q_DECL_CONSTEXPR bool isTestAndSetWaitFree() Q_DECL_NOTHROW { return false; }
+    template <typename T> static bool
+    testAndSetRelaxed(T &_q_value, T expectedValue, T newValue, T *currentValue = 0) Q_DECL_NOTHROW;
+
+    static inline Q_DECL_CONSTEXPR bool isFetchAndStoreNative() Q_DECL_NOTHROW { return true; }
+    template <typename T> static T fetchAndStoreRelaxed(T &_q_value, T newValue) Q_DECL_NOTHROW;
+
+    static inline Q_DECL_CONSTEXPR bool isFetchAndAddNative() Q_DECL_NOTHROW { return true; }
+    template <typename T> static
+    T fetchAndAddRelaxed(T &_q_value, typename QAtomicAdditiveType<T>::AdditiveT valueToAdd) Q_DECL_NOTHROW;
+};
+
+template <typename T> struct QAtomicOps : QBasicAtomicOps<sizeof(T)>
+{
+    typedef T Type;
+};
+
+#if defined(Q_CC_GNU)
+
+#if defined(_MIPS_ARCH_MIPS1) || (defined(__mips) && __mips - 0 == 1)
+# error "Sorry, the MIPS1 architecture is not supported"
+# error "please set '-march=' to your architecture (e.g., -march=mips32)"
+#endif
+
+template <int size> template <typename T> inline
+void QBasicAtomicOps<size>::acquireMemoryFence(const T &) Q_DECL_NOTHROW
+{
+    asm volatile (".set push\n"
+                  ".set mips32\n"
+                  "sync 0x11\n"
+                  ".set pop\n" ::: "memory");
+}
+
+template <int size> template <typename T> inline
+void QBasicAtomicOps<size>::releaseMemoryFence(const T &) Q_DECL_NOTHROW
+{
+    asm volatile (".set push\n"
+                  ".set mips32\n"
+                  "sync 0x12\n"
+                  ".set pop\n" ::: "memory");
+}
+
+template <int size> template <typename T> inline
+void QBasicAtomicOps<size>::orderedMemoryFence(const T &) Q_DECL_NOTHROW
+{
+    asm volatile ("sync 0" ::: "memory");
+}
+
+template<> template<typename T> inline
+bool QBasicAtomicOps<4>::ref(T &_q_value) Q_DECL_NOTHROW
+{
+    T originalValue;
+    T newValue;
+    asm volatile("0:\n"
                  "ll %[originalValue], %[_q_value]\n"
                  "addiu %[newValue], %[originalValue], %[one]\n"
                  "sc %[newValue], %[_q_value]\n"
                  "beqz %[newValue], 0b\n"
                  "nop\n"
-                 ".set pop\n"
                  : [originalValue] "=&r" (originalValue),
                    [_q_value] "+m" (_q_value),
                    [newValue] "=&r" (newValue)
                  : [one] "i" (1)
                  : "cc", "memory");
-    return originalValue != -1;
+    return originalValue != T(-1);
 }
 
-inline bool QBasicAtomicInt::deref()
+template<> template<typename T> inline
+bool QBasicAtomicOps<4>::deref(T &_q_value) Q_DECL_NOTHROW
 {
-    register int originalValue;
-    register int newValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "0:\n"
+    T originalValue;
+    T newValue;
+    asm volatile("0:\n"
                  "ll %[originalValue], %[_q_value]\n"
                  "addiu %[newValue], %[originalValue], %[minusOne]\n"
                  "sc %[newValue], %[_q_value]\n"
                  "beqz %[newValue], 0b\n"
                  "nop\n"
-                 ".set pop\n"
                  : [originalValue] "=&r" (originalValue),
                    [_q_value] "+m" (_q_value),
                    [newValue] "=&r" (newValue)
@@ -151,15 +169,14 @@ inline bool QBasicAtomicInt::deref()
     return originalValue != 1;
 }
 
-inline bool QBasicAtomicInt::testAndSetRelaxed(int expectedValue, int newValue)
+template<> template <typename T> inline
+bool QBasicAtomicOps<4>::testAndSetRelaxed(T &_q_value, T expectedValue, T newValue, T *currentValue) Q_DECL_NOTHROW
 {
-    register int result;
-    register int tempValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "0:\n"
-                 "ll %[result], %[_q_value]\n"
-                 "xor %[result], %[result], %[expectedValue]\n"
+    T result;
+    T tempValue;
+    asm volatile("0:\n"
+                 "ll %[tempValue], %[_q_value]\n"
+                 "xor %[result], %[tempValue], %[expectedValue]\n"
                  "bnez %[result], 0f\n"
                  "nop\n"
                  "move %[tempValue], %[newValue]\n"
@@ -167,88 +184,28 @@ inline bool QBasicAtomicInt::testAndSetRelaxed(int expectedValue, int newValue)
                  "beqz %[tempValue], 0b\n"
                  "nop\n"
                  "0:\n"
-                 ".set pop\n"
                  : [result] "=&r" (result),
                    [tempValue] "=&r" (tempValue),
                    [_q_value] "+m" (_q_value)
                  : [expectedValue] "r" (expectedValue),
                    [newValue] "r" (newValue)
                  : "cc", "memory");
+    if (currentValue)
+        *currentValue = tempValue;
     return result == 0;
 }
 
-inline bool QBasicAtomicInt::testAndSetAcquire(int expectedValue, int newValue)
+template<> template <typename T> inline
+T QBasicAtomicOps<4>::fetchAndStoreRelaxed(T &_q_value, T newValue) Q_DECL_NOTHROW
 {
-    register int result;
-    register int tempValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "0:\n"
-                 "ll %[result], %[_q_value]\n"
-                 "xor %[result], %[result], %[expectedValue]\n"
-                 "bnez %[result], 0f\n"
-                 "nop\n"
-                 "move %[tempValue], %[newValue]\n"
-                 "sc %[tempValue], %[_q_value]\n"
-                 "beqz %[tempValue], 0b\n"
-                 "nop\n"
-                 "sync\n"
-                 "0:\n"
-                 ".set pop\n"
-                 : [result] "=&r" (result),
-                   [tempValue] "=&r" (tempValue),
-                   [_q_value] "+m" (_q_value)
-                 : [expectedValue] "r" (expectedValue),
-                   [newValue] "r" (newValue)
-                 : "cc", "memory");
-    return result == 0;
-}
-
-inline bool QBasicAtomicInt::testAndSetRelease(int expectedValue, int newValue)
-{
-    register int result;
-    register int tempValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "sync\n"
-                 "0:\n"
-                 "ll %[result], %[_q_value]\n"
-                 "xor %[result], %[result], %[expectedValue]\n"
-                 "bnez %[result], 0f\n"
-                 "nop\n"
-                 "move %[tempValue], %[newValue]\n"
-                 "sc %[tempValue], %[_q_value]\n"
-                 "beqz %[tempValue], 0b\n"
-                 "nop\n"
-                 "0:\n"
-                 ".set pop\n"
-                 : [result] "=&r" (result),
-                   [tempValue] "=&r" (tempValue),
-                   [_q_value] "+m" (_q_value)
-                 : [expectedValue] "r" (expectedValue),
-                   [newValue] "r" (newValue)
-                 : "cc", "memory");
-    return result == 0;
-}
-
-inline bool QBasicAtomicInt::testAndSetOrdered(int expectedValue, int newValue)
-{
-    return testAndSetAcquire(expectedValue, newValue);
-}
-
-inline int QBasicAtomicInt::fetchAndStoreRelaxed(int newValue)
-{
-    register int originalValue;
-    register int tempValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "0:\n"
+    T originalValue;
+    T tempValue;
+    asm volatile("0:\n"
                  "ll %[originalValue], %[_q_value]\n"
                  "move %[tempValue], %[newValue]\n"
                  "sc %[tempValue], %[_q_value]\n"
                  "beqz %[tempValue], 0b\n"
                  "nop\n"
-                 ".set pop\n"
                  : [originalValue] "=&r" (originalValue),
                    [tempValue] "=&r" (tempValue),
                    [_q_value] "+m" (_q_value)
@@ -257,20 +214,110 @@ inline int QBasicAtomicInt::fetchAndStoreRelaxed(int newValue)
     return originalValue;
 }
 
-inline int QBasicAtomicInt::fetchAndStoreAcquire(int newValue)
+template<> template <typename T> inline
+T QBasicAtomicOps<4>::fetchAndAddRelaxed(T &_q_value, typename QAtomicAdditiveType<T>::AdditiveT valueToAdd) Q_DECL_NOTHROW
 {
-    register int originalValue;
-    register int tempValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "0:\n"
+    T originalValue;
+    T newValue;
+    asm volatile("0:\n"
                  "ll %[originalValue], %[_q_value]\n"
+                 "addu %[newValue], %[originalValue], %[valueToAdd]\n"
+                 "sc %[newValue], %[_q_value]\n"
+                 "beqz %[newValue], 0b\n"
+                 "nop\n"
+                 : [originalValue] "=&r" (originalValue),
+                   [_q_value] "+m" (_q_value),
+                   [newValue] "=&r" (newValue)
+                 : [valueToAdd] "r" (valueToAdd * QAtomicAdditiveType<T>::AddScale)
+                 : "cc", "memory");
+    return originalValue;
+}
+
+#if defined(Q_PROCESSOR_MIPS_64)
+
+#define Q_ATOMIC_INT64_IS_SUPPORTED
+#define Q_ATOMIC_INT64_REFERENCE_COUNTING_IS_ALWAYS_NATIVE
+#define Q_ATOMIC_INT64_TEST_AND_SET_IS_ALWAYS_NATIVE
+#define Q_ATOMIC_INT64_FETCH_AND_STORE_IS_ALWAYS_NATIVE
+#define Q_ATOMIC_INT64_FETCH_AND_ADD_IS_ALWAYS_NATIVE
+
+template<> struct QAtomicOpsSupport<8> { enum { IsSupported = 1 }; };
+
+template<> template<typename T> inline
+bool QBasicAtomicOps<8>::ref(T &_q_value) Q_DECL_NOTHROW
+{
+    T originalValue;
+    T newValue;
+    asm volatile("0:\n"
+                 "lld %[originalValue], %[_q_value]\n"
+                 "addiu %[newValue], %[originalValue], %[one]\n"
+                 "scd %[newValue], %[_q_value]\n"
+                 "beqz %[newValue], 0b\n"
+                 "nop\n"
+                 : [originalValue] "=&r" (originalValue),
+                   [_q_value] "+m" (_q_value),
+                   [newValue] "=&r" (newValue)
+                 : [one] "i" (1)
+                 : "cc", "memory");
+    return originalValue != T(-1);
+}
+
+template<> template<typename T> inline
+bool QBasicAtomicOps<8>::deref(T &_q_value) Q_DECL_NOTHROW
+{
+    T originalValue;
+    T newValue;
+    asm volatile("0:\n"
+                 "lld %[originalValue], %[_q_value]\n"
+                 "addiu %[newValue], %[originalValue], %[minusOne]\n"
+                 "scd %[newValue], %[_q_value]\n"
+                 "beqz %[newValue], 0b\n"
+                 "nop\n"
+                 : [originalValue] "=&r" (originalValue),
+                   [_q_value] "+m" (_q_value),
+                   [newValue] "=&r" (newValue)
+                 : [minusOne] "i" (-1)
+                 : "cc", "memory");
+    return originalValue != 1;
+}
+
+template<> template <typename T> inline
+bool QBasicAtomicOps<8>::testAndSetRelaxed(T &_q_value, T expectedValue, T newValue, T *currentValue) Q_DECL_NOTHROW
+{
+    T result;
+    T tempValue;
+    asm volatile("0:\n"
+                 "lld %[tempValue], %[_q_value]\n"
+                 "xor %[result], %[tempValue], %[expectedValue]\n"
+                 "bnez %[result], 0f\n"
+                 "nop\n"
                  "move %[tempValue], %[newValue]\n"
-                 "sc %[tempValue], %[_q_value]\n"
+                 "scd %[tempValue], %[_q_value]\n"
                  "beqz %[tempValue], 0b\n"
                  "nop\n"
-                 "sync\n"
-                 ".set pop\n"
+                 "0:\n"
+                 : [result] "=&r" (result),
+                   [tempValue] "=&r" (tempValue),
+                   [_q_value] "+m" (_q_value)
+                 : [expectedValue] "r" (expectedValue),
+                   [newValue] "r" (newValue)
+                 : "cc", "memory");
+    if (currentValue)
+        *currentValue = tempValue;
+    return result == 0;
+}
+
+template<> template <typename T> inline
+T QBasicAtomicOps<8>::fetchAndStoreRelaxed(T &_q_value, T newValue) Q_DECL_NOTHROW
+{
+    T originalValue;
+    T tempValue;
+    asm volatile("0:\n"
+                 "lld %[originalValue], %[_q_value]\n"
+                 "move %[tempValue], %[newValue]\n"
+                 "scd %[tempValue], %[_q_value]\n"
+                 "beqz %[tempValue], 0b\n"
+                 "nop\n"
                  : [originalValue] "=&r" (originalValue),
                    [tempValue] "=&r" (tempValue),
                    [_q_value] "+m" (_q_value)
@@ -279,614 +326,31 @@ inline int QBasicAtomicInt::fetchAndStoreAcquire(int newValue)
     return originalValue;
 }
 
-inline int QBasicAtomicInt::fetchAndStoreRelease(int newValue)
+template<> template <typename T> inline
+T QBasicAtomicOps<8>::fetchAndAddRelaxed(T &_q_value, typename QAtomicAdditiveType<T>::AdditiveT valueToAdd) Q_DECL_NOTHROW
 {
-    register int originalValue;
-    register int tempValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "sync\n"
-                 "0:\n"
-                 "ll %[originalValue], %[_q_value]\n"
-                 "move %[tempValue], %[newValue]\n"
-                 "sc %[tempValue], %[_q_value]\n"
-                 "beqz %[tempValue], 0b\n"
-                 "nop\n"
-                 ".set pop\n"
-                 : [originalValue] "=&r" (originalValue),
-                   [tempValue] "=&r" (tempValue),
-                   [_q_value] "+m" (_q_value)
-                 : [newValue] "r" (newValue)
-                 : "cc", "memory");
-    return originalValue;
-}
-
-inline int QBasicAtomicInt::fetchAndStoreOrdered(int newValue)
-{
-    return fetchAndStoreAcquire(newValue);
-}
-
-inline int QBasicAtomicInt::fetchAndAddRelaxed(int valueToAdd)
-{
-    register int originalValue;
-    register int newValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "0:\n"
-                 "ll %[originalValue], %[_q_value]\n"
+    T originalValue;
+    T newValue;
+    asm volatile("0:\n"
+                 "lld %[originalValue], %[_q_value]\n"
                  "addu %[newValue], %[originalValue], %[valueToAdd]\n"
-                 "sc %[newValue], %[_q_value]\n"
+                 "scd %[newValue], %[_q_value]\n"
                  "beqz %[newValue], 0b\n"
                  "nop\n"
-                 ".set pop\n"
                  : [originalValue] "=&r" (originalValue),
                    [_q_value] "+m" (_q_value),
                    [newValue] "=&r" (newValue)
-                 : [valueToAdd] "r" (valueToAdd)
+                 : [valueToAdd] "r" (valueToAdd * QAtomicAdditiveType<T>::AddScale)
                  : "cc", "memory");
     return originalValue;
 }
 
-inline int QBasicAtomicInt::fetchAndAddAcquire(int valueToAdd)
-{
-    register int originalValue;
-    register int newValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "0:\n"
-                 "ll %[originalValue], %[_q_value]\n"
-                 "addu %[newValue], %[originalValue], %[valueToAdd]\n"
-                 "sc %[newValue], %[_q_value]\n"
-                 "beqz %[newValue], 0b\n"
-                 "nop\n"
-                 "sync\n"
-                 ".set pop\n"
-                 : [originalValue] "=&r" (originalValue),
-                   [_q_value] "+m" (_q_value),
-                   [newValue] "=&r" (newValue)
-                 : [valueToAdd] "r" (valueToAdd)
-                 : "cc", "memory");
-    return originalValue;
-}
+#endif // MIPS64
 
-inline int QBasicAtomicInt::fetchAndAddRelease(int valueToAdd)
-{
-    register int originalValue;
-    register int newValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "sync\n"
-                 "0:\n"
-                 "ll %[originalValue], %[_q_value]\n"
-                 "addu %[newValue], %[originalValue], %[valueToAdd]\n"
-                 "sc %[newValue], %[_q_value]\n"
-                 "beqz %[newValue], 0b\n"
-                 "nop\n"
-                 ".set pop\n"
-                 : [originalValue] "=&r" (originalValue),
-                   [_q_value] "+m" (_q_value),
-                   [newValue] "=&r" (newValue)
-                 : [valueToAdd] "r" (valueToAdd)
-                 : "cc", "memory");
-    return originalValue;
-}
-
-inline int QBasicAtomicInt::fetchAndAddOrdered(int valueToAdd)
-{
-    return fetchAndAddAcquire(valueToAdd);
-}
-
-#if defined(__LP64__)
-#  define LLP "lld"
-#  define SCP "scd"
 #else
-#  define LLP "ll"
-#  define SCP "sc"
-#endif
-
-template <typename T>
-Q_INLINE_TEMPLATE bool QBasicAtomicPointer<T>::testAndSetRelaxed(T *expectedValue, T *newValue)
-{
-    register T *result;
-    register T *tempValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "0:\n"
-                 LLP" %[result], %[_q_value]\n"
-                 "xor %[result], %[result], %[expectedValue]\n"
-                 "bnez %[result], 0f\n"
-                 "nop\n"
-                 "move %[tempValue], %[newValue]\n"
-                 SCP" %[tempValue], %[_q_value]\n"
-                 "beqz %[tempValue], 0b\n"
-                 "nop\n"
-                 "0:\n"
-                 ".set pop\n"
-                 : [result] "=&r" (result),
-                   [tempValue] "=&r" (tempValue),
-                   [_q_value] "+m" (_q_value)
-                 : [expectedValue] "r" (expectedValue),
-                   [newValue] "r" (newValue)
-                 : "cc", "memory");
-    return result == 0;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE bool QBasicAtomicPointer<T>::testAndSetAcquire(T *expectedValue, T *newValue)
-{
-    register T *result;
-    register T *tempValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "0:\n"
-                 LLP" %[result], %[_q_value]\n"
-                 "xor %[result], %[result], %[expectedValue]\n"
-                 "bnez %[result], 0f\n"
-                 "nop\n"
-                 "move %[tempValue], %[newValue]\n"
-                 SCP" %[tempValue], %[_q_value]\n"
-                 "beqz %[tempValue], 0b\n"
-                 "nop\n"
-                 "sync\n"
-                 "0:\n"
-                 ".set pop\n"
-                 : [result] "=&r" (result),
-                   [tempValue] "=&r" (tempValue),
-                   [_q_value] "+m" (_q_value)
-                 : [expectedValue] "r" (expectedValue),
-                   [newValue] "r" (newValue)
-                 : "cc", "memory");
-    return result == 0;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE bool QBasicAtomicPointer<T>::testAndSetRelease(T *expectedValue, T *newValue)
-{
-    register T *result;
-    register T *tempValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "sync\n"
-                 "0:\n"
-                 LLP" %[result], %[_q_value]\n"
-                 "xor %[result], %[result], %[expectedValue]\n"
-                 "bnez %[result], 0f\n"
-                 "nop\n"
-                 "move %[tempValue], %[newValue]\n"
-                 SCP" %[tempValue], %[_q_value]\n"
-                 "beqz %[tempValue], 0b\n"
-                 "nop\n"
-                 "0:\n"
-                 ".set pop\n"
-                 : [result] "=&r" (result),
-                   [tempValue] "=&r" (tempValue),
-                   [_q_value] "+m" (_q_value)
-                 : [expectedValue] "r" (expectedValue),
-                   [newValue] "r" (newValue)
-                 : "cc", "memory");
-    return result == 0;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE bool QBasicAtomicPointer<T>::testAndSetOrdered(T *expectedValue, T *newValue)
-{
-    return testAndSetAcquire(expectedValue, newValue);
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndStoreRelaxed(T *newValue)
-{
-    register T *originalValue;
-    register T *tempValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "0:\n"
-                 LLP" %[originalValue], %[_q_value]\n"
-                 "move %[tempValue], %[newValue]\n"
-                 SCP" %[tempValue], %[_q_value]\n"
-                 "beqz %[tempValue], 0b\n"
-                 "nop\n"
-                 ".set pop\n"
-                 : [originalValue] "=&r" (originalValue),
-                   [tempValue] "=&r" (tempValue),
-                   [_q_value] "+m" (_q_value)
-                 : [newValue] "r" (newValue)
-                 : "cc", "memory");
-    return originalValue;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndStoreAcquire(T *newValue)
-{
-    register T *originalValue;
-    register T *tempValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "0:\n"
-                 LLP" %[originalValue], %[_q_value]\n"
-                 "move %[tempValue], %[newValue]\n"
-                 SCP" %[tempValue], %[_q_value]\n"
-                 "beqz %[tempValue], 0b\n"
-                 "nop\n"
-                 "sync\n"
-                 ".set pop\n"
-                 : [originalValue] "=&r" (originalValue),
-                   [tempValue] "=&r" (tempValue),
-                   [_q_value] "+m" (_q_value)
-                 : [newValue] "r" (newValue)
-                 : "cc", "memory");
-    return originalValue;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndStoreRelease(T *newValue)
-{
-    register T *originalValue;
-    register T *tempValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "sync\n"
-                 "0:\n"
-                 LLP" %[originalValue], %[_q_value]\n"
-                 "move %[tempValue], %[newValue]\n"
-                 SCP" %[tempValue], %[_q_value]\n"
-                 "beqz %[tempValue], 0b\n"
-                 "nop\n"
-                 ".set pop\n"
-                 : [originalValue] "=&r" (originalValue),
-                   [tempValue] "=&r" (tempValue),
-                   [_q_value] "+m" (_q_value)
-                 : [newValue] "r" (newValue)
-                 : "cc", "memory");
-    return originalValue;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndStoreOrdered(T *newValue)
-{
-    return fetchAndStoreAcquire(newValue);
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndAddRelaxed(qptrdiff valueToAdd)
-{
-    register T *originalValue;
-    register T *newValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "0:\n"
-                 LLP" %[originalValue], %[_q_value]\n"
-                 "addu %[newValue], %[originalValue], %[valueToAdd]\n"
-                 SCP" %[newValue], %[_q_value]\n"
-                 "beqz %[newValue], 0b\n"
-                 "nop\n"
-                 ".set pop\n"
-                 : [originalValue] "=&r" (originalValue),
-                   [_q_value] "+m" (_q_value),
-                   [newValue] "=&r" (newValue)
-                 : [valueToAdd] "r" (valueToAdd * sizeof(T))
-                 : "cc", "memory");
-    return originalValue;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndAddAcquire(qptrdiff valueToAdd)
-{
-    register T *originalValue;
-    register T *newValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "0:\n"
-                 LLP" %[originalValue], %[_q_value]\n"
-                 "addu %[newValue], %[originalValue], %[valueToAdd]\n"
-                 SCP" %[newValue], %[_q_value]\n"
-                 "beqz %[newValue], 0b\n"
-                 "nop\n"
-                 "sync\n"
-                 ".set pop\n"
-                 : [originalValue] "=&r" (originalValue),
-                   [_q_value] "+m" (_q_value),
-                   [newValue] "=&r" (newValue)
-                 : [valueToAdd] "r" (valueToAdd * sizeof(T))
-                 : "cc", "memory");
-    return originalValue;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndAddRelease(qptrdiff valueToAdd)
-{
-    register T *originalValue;
-    register T *newValue;
-    asm volatile(".set push\n"
-                 SET_MIPS2
-                 "sync\n"
-                 "0:\n"
-                 LLP" %[originalValue], %[_q_value]\n"
-                 "addu %[newValue], %[originalValue], %[valueToAdd]\n"
-                 SCP" %[newValue], %[_q_value]\n"
-                 "beqz %[newValue], 0b\n"
-                 "nop\n"
-                 ".set pop\n"
-                 : [originalValue] "=&r" (originalValue),
-                   [_q_value] "+m" (_q_value),
-                   [newValue] "=&r" (newValue)
-                 : [valueToAdd] "r" (valueToAdd * sizeof(T))
-                 : "cc", "memory");
-    return originalValue;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndAddOrdered(qptrdiff valueToAdd)
-{
-    return fetchAndAddAcquire(valueToAdd);
-}
-
-#else // !Q_CC_GNU
-
-extern "C" {
-    Q_CORE_EXPORT int q_atomic_test_and_set_int(volatile int *ptr, int expected, int newval);
-    Q_CORE_EXPORT int q_atomic_test_and_set_acquire_int(volatile int *ptr, int expected, int newval);
-    Q_CORE_EXPORT int q_atomic_test_and_set_release_int(volatile int *ptr, int expected, int newval);
-    Q_CORE_EXPORT int q_atomic_test_and_set_ptr(volatile void *ptr, void *expected, void *newval);
-    Q_CORE_EXPORT int q_atomic_test_and_set_acquire_ptr(volatile void *ptr, void *expected, void *newval);
-    Q_CORE_EXPORT int q_atomic_test_and_set_release_ptr(volatile void *ptr, void *expected, void *newval);
-} // extern "C"
-
-inline bool QBasicAtomicInt::ref()
-{
-    register int expected;
-    for (;;) {
-        expected = _q_value;
-        if (q_atomic_test_and_set_int(&_q_value, expected, expected + 1))
-            break;
-    }
-    return expected != -1;
-}
-
-inline bool QBasicAtomicInt::deref()
-{
-    register int expected;
-    for (;;) {
-        expected = _q_value;
-        if (q_atomic_test_and_set_int(&_q_value, expected, expected - 1))
-            break;
-    }
-    return expected != 1;
-}
-
-inline bool QBasicAtomicInt::testAndSetRelaxed(int expectedValue, int newValue)
-{
-    return q_atomic_test_and_set_int(&_q_value, expectedValue, newValue) != 0;
-}
-
-inline bool QBasicAtomicInt::testAndSetAcquire(int expectedValue, int newValue)
-{
-    return q_atomic_test_and_set_acquire_int(&_q_value, expectedValue, newValue) != 0;
-}
-
-inline bool QBasicAtomicInt::testAndSetRelease(int expectedValue, int newValue)
-{
-    return q_atomic_test_and_set_release_int(&_q_value, expectedValue, newValue) != 0;
-}
-
-inline bool QBasicAtomicInt::testAndSetOrdered(int expectedValue, int newValue)
-{
-    return q_atomic_test_and_set_acquire_int(&_q_value, expectedValue, newValue) != 0;
-}
-
-inline int QBasicAtomicInt::fetchAndStoreRelaxed(int newValue)
-{
-    int returnValue;
-    for (;;) {
-        returnValue = _q_value;
-        if (testAndSetRelaxed(returnValue, newValue))
-            break;
-    }
-    return returnValue;
-}
-
-inline int QBasicAtomicInt::fetchAndStoreAcquire(int newValue)
-{
-    int returnValue;
-    for (;;) {
-        returnValue = _q_value;
-        if (testAndSetAcquire(returnValue, newValue))
-            break;
-    }
-    return returnValue;
-}
-
-inline int QBasicAtomicInt::fetchAndStoreRelease(int newValue)
-{
-    int returnValue;
-    for (;;) {
-        returnValue = _q_value;
-        if (testAndSetRelease(returnValue, newValue))
-            break;
-    }
-    return returnValue;
-}
-
-inline int QBasicAtomicInt::fetchAndStoreOrdered(int newValue)
-{
-    int returnValue;
-    for (;;) {
-        returnValue = _q_value;
-        if (testAndSetOrdered(returnValue, newValue))
-            break;
-    }
-    return returnValue;
-}
-
-inline int QBasicAtomicInt::fetchAndAddRelaxed(int valueToAdd)
-{
-    int returnValue;
-    for (;;) {
-        returnValue = _q_value;
-        if (testAndSetRelaxed(returnValue, returnValue + valueToAdd))
-            break;
-    }
-    return returnValue;
-}
-
-inline int QBasicAtomicInt::fetchAndAddAcquire(int valueToAdd)
-{
-    int returnValue;
-    for (;;) {
-        returnValue = _q_value;
-        if (testAndSetAcquire(returnValue, returnValue + valueToAdd))
-            break;
-    }
-    return returnValue;
-}
-
-inline int QBasicAtomicInt::fetchAndAddRelease(int valueToAdd)
-{
-    int returnValue;
-    for (;;) {
-        returnValue = _q_value;
-        if (testAndSetRelease(returnValue, returnValue + valueToAdd))
-            break;
-    }
-    return returnValue;
-}
-
-inline int QBasicAtomicInt::fetchAndAddOrdered(int valueToAdd)
-{
-    int returnValue;
-    for (;;) {
-        returnValue = _q_value;
-        if (testAndSetOrdered(returnValue, returnValue + valueToAdd))
-            break;
-    }
-    return returnValue;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE bool QBasicAtomicPointer<T>::testAndSetRelaxed(T *expectedValue, T *newValue)
-{
-    return q_atomic_test_and_set_ptr(&_q_value, expectedValue, newValue) != 0;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE bool QBasicAtomicPointer<T>::testAndSetAcquire(T *expectedValue, T *newValue)
-{
-    return q_atomic_test_and_set_acquire_ptr(&_q_value, expectedValue, newValue) != 0;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE bool QBasicAtomicPointer<T>::testAndSetRelease(T *expectedValue, T *newValue)
-{
-    return q_atomic_test_and_set_release_ptr(&_q_value, expectedValue, newValue) != 0;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE bool QBasicAtomicPointer<T>::testAndSetOrdered(T *expectedValue, T *newValue)
-{
-    return q_atomic_test_and_set_acquire_ptr(&_q_value, expectedValue, newValue) != 0;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndStoreRelaxed(T *newValue)
-{
-    T *returnValue;
-    for (;;) {
-        returnValue = (_q_value);
-        if (testAndSetRelaxed(returnValue, newValue))
-            break;
-    }
-    return returnValue;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndStoreAcquire(T *newValue)
-{
-    T *returnValue;
-    for (;;) {
-        returnValue = (_q_value);
-        if (testAndSetAcquire(returnValue, newValue))
-            break;
-    }
-    return returnValue;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndStoreRelease(T *newValue)
-{
-    T *returnValue;
-    for (;;) {
-        returnValue = (_q_value);
-        if (testAndSetRelease(returnValue, newValue))
-            break;
-    }
-    return returnValue;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndStoreOrdered(T *newValue)
-{
-    T *returnValue;
-    for (;;) {
-        returnValue = (_q_value);
-        if (testAndSetOrdered(returnValue, newValue))
-            break;
-    }
-    return returnValue;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndAddRelaxed(qptrdiff valueToAdd)
-{
-    T *returnValue;
-    for (;;) {
-        returnValue = (_q_value);
-        if (testAndSetRelaxed(returnValue, returnValue + valueToAdd))
-            break;
-    }
-    return returnValue;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE
-T *QBasicAtomicPointer<T>::fetchAndAddAcquire(qptrdiff valueToAdd)
-{
-    T *returnValue;
-    for (;;) {
-        returnValue = (_q_value);
-        if (testAndSetAcquire(returnValue, returnValue + valueToAdd))
-            break;
-    }
-    return returnValue;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndAddRelease(qptrdiff valueToAdd)
-{
-    T *returnValue;
-    for (;;) {
-        returnValue = (_q_value);
-        if (testAndSetRelease(returnValue, returnValue + valueToAdd))
-            break;
-    }
-    return returnValue;
-}
-
-template <typename T>
-Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndAddOrdered(qptrdiff valueToAdd)
-{
-    T *returnValue;
-    for (;;) {
-        returnValue = (_q_value);
-        if (testAndSetOrdered(returnValue, returnValue + valueToAdd))
-            break;
-    }
-    return returnValue;
-}
-
+# error "This compiler for MIPS is not supported"
 #endif // Q_CC_GNU
 
 QT_END_NAMESPACE
-
-QT_END_HEADER
 
 #endif // QATOMIC_MIPS_H

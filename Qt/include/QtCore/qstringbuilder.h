@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -42,74 +42,66 @@
 #ifndef QSTRINGBUILDER_H
 #define QSTRINGBUILDER_H
 
+#if 0
+// syncqt can not handle the templates in this file, and it doesn't need to
+// process them anyway because they are internal.
+#pragma qt_class(QStringBuilder)
+#pragma qt_sync_stop_processing
+#endif
+
 #include <QtCore/qstring.h>
 #include <QtCore/qbytearray.h>
 
-#if defined(Q_CC_GNU) && !defined(Q_CC_INTEL)
-#  if __GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ == 0)
-#    include <QtCore/qmap.h>
-#  endif
-#endif
-
 #include <string.h>
-
-QT_BEGIN_HEADER
 
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
-
-// ### Qt 5: merge with QLatin1String
-class QLatin1Literal
-{
-public:
-    int size() const { return m_size; }
-    const char *data() const { return m_data; }
-
-    template <int N>
-    QLatin1Literal(const char (&str)[N])
-        : m_size(N - 1), m_data(str) {}
-
-private:
-    const int m_size;
-    const char * const m_data;
-};
 
 struct Q_CORE_EXPORT QAbstractConcatenable
 {
 protected:
     static void convertFromAscii(const char *a, int len, QChar *&out);
-    static void convertToAscii(const QChar *a, int len, char *&out);
     static inline void convertFromAscii(char a, QChar *&out)
     {
-#ifndef QT_NO_TEXTCODEC
-        if (QString::codecForCStrings)
-            *out++ = QChar::fromAscii(a);
-        else
-#endif
-            *out++ = QLatin1Char(a);
+        *out++ = QLatin1Char(a);
     }
-
-    static inline void convertToAscii(QChar a, char *&out)
-    {
-#ifndef QT_NO_TEXTCODEC
-        if (QString::codecForCStrings)
-            *out++ = a.toAscii(); //###
-        else
-#endif
-            convertToLatin1(a, out);
-    }
-
-    static inline void convertToLatin1(QChar a, char *&out)
-    {
-        *out++ = a.unicode() > 0xff ? '?' : char(a.unicode());
-    }
+    static void appendLatin1To(const char *a, int len, QChar *out);
 };
 
 template <typename T> struct QConcatenable {};
 
+namespace QtStringBuilder {
+    template <typename A, typename B> struct ConvertToTypeHelper
+    { typedef A ConvertTo; };
+    template <typename T> struct ConvertToTypeHelper<T, QString>
+    { typedef QString ConvertTo; };
+}
+
+template<typename Builder, typename T>
+struct QStringBuilderCommon
+{
+    T toUpper() const { return resolved().toUpper(); }
+    T toLower() const { return resolved().toLower(); }
+
+protected:
+    const T resolved() const { return *static_cast<const Builder*>(this); }
+};
+
+template<typename Builder, typename T>
+struct QStringBuilderBase : public QStringBuilderCommon<Builder, T>
+{
+};
+
+template<typename Builder>
+struct QStringBuilderBase<Builder, QString> : public QStringBuilderCommon<Builder, QString>
+{
+    QByteArray toLatin1() const { return this->resolved().toLatin1(); }
+    QByteArray toUtf8() const { return this->resolved().toUtf8(); }
+    QByteArray toLocal8Bit() const { return this->resolved().toLocal8Bit(); }
+};
+
 template <typename A, typename B>
-class QStringBuilder
+class QStringBuilder : public QStringBuilderBase<QStringBuilder<A, B>, typename QtStringBuilder::ConvertToTypeHelper<typename QConcatenable<A>::ConvertTo, typename QConcatenable<B>::ConvertTo>::ConvertTo>
 {
 public:
     QStringBuilder(const A &a_, const B &b_) : a(a_), b(b_) {}
@@ -121,7 +113,9 @@ private:
         const uint len = QConcatenable< QStringBuilder<A, B> >::size(*this);
         T s(len, Qt::Uninitialized);
 
-        typename T::iterator d = s.data();
+        // we abuse const_cast / constData here because we know we've just
+        // allocated the data and we're the only reference count
+        typename T::iterator d = const_cast<typename T::iterator>(s.constData());
         typename T::const_iterator const start = d;
         QConcatenable< QStringBuilder<A, B> >::appendTo(*this, d);
 
@@ -138,7 +132,6 @@ private:
 public:
     operator ConvertTo() const { return convertTo<ConvertTo>(); }
 
-    QByteArray toLatin1() const { return convertTo<QString>().toLatin1(); }
     int size() const { return Concatenable::size(*this); }
 
     const A &a;
@@ -146,30 +139,37 @@ public:
 };
 
 template <>
-class QStringBuilder <QString, QString>
+class QStringBuilder <QString, QString> : public QStringBuilderBase<QStringBuilder<QString, QString>, QString>
 {
     public:
         QStringBuilder(const QString &a_, const QString &b_) : a(a_), b(b_) {}
+        QStringBuilder(const QStringBuilder &other) : a(other.a), b(other.b) {}
 
         operator QString() const
         { QString r(a); r += b; return r; }
-        QByteArray toLatin1() const { return QString(*this).toLatin1(); }
 
         const QString &a;
         const QString &b;
+
+    private:
+        QStringBuilder &operator=(const QStringBuilder &) Q_DECL_EQ_DELETE;
 };
 
 template <>
-class QStringBuilder <QByteArray, QByteArray>
+class QStringBuilder <QByteArray, QByteArray> : public QStringBuilderBase<QStringBuilder<QByteArray, QByteArray>, QByteArray>
 {
     public:
         QStringBuilder(const QByteArray &a_, const QByteArray &b_) : a(a_), b(b_) {}
+        QStringBuilder(const QStringBuilder &other) : a(other.a), b(other.b) {}
 
         operator QByteArray() const
         { QByteArray r(a); r += b; return r; }
 
         const QByteArray &a;
         const QByteArray &b;
+
+    private:
+        QStringBuilder &operator=(const QStringBuilder &) Q_DECL_EQ_DELETE;
 };
 
 
@@ -209,10 +209,16 @@ template <> struct QConcatenable<QChar> : private QAbstractConcatenable
     static int size(const QChar) { return 1; }
     static inline void appendTo(const QChar c, QChar *&out)
     { *out++ = c; }
-#ifndef QT_NO_CAST_TO_ASCII
-    static inline QT_ASCII_CAST_WARN void appendTo(const QChar c, char *&out)
-    { convertToAscii(c, out); }
-#endif
+};
+
+template <> struct QConcatenable<QChar::SpecialCharacter> : private QAbstractConcatenable
+{
+    typedef QChar::SpecialCharacter type;
+    typedef QString ConvertTo;
+    enum { ExactSize = true };
+    static int size(const QChar::SpecialCharacter) { return 1; }
+    static inline void appendTo(const QChar::SpecialCharacter c, QChar *&out)
+    { *out++ = c; }
 };
 
 template <> struct QConcatenable<QCharRef> : private QAbstractConcatenable
@@ -220,48 +226,28 @@ template <> struct QConcatenable<QCharRef> : private QAbstractConcatenable
     typedef QCharRef type;
     typedef QString ConvertTo;
     enum { ExactSize = true };
-    static int size(const QCharRef &) { return 1; }
-    static inline void appendTo(const QCharRef &c, QChar *&out)
+    static int size(QCharRef) { return 1; }
+    static inline void appendTo(QCharRef c, QChar *&out)
     { *out++ = QChar(c); }
-#ifndef QT_NO_CAST_TO_ASCII
-    static inline QT_ASCII_CAST_WARN void appendTo(const QCharRef &c, char *&out)
-    { convertToAscii(c, out); }
-#endif
 };
 
-template <> struct QConcatenable<QLatin1String>
+template <> struct QConcatenable<QLatin1String> : private QAbstractConcatenable
 {
     typedef QLatin1String type;
     typedef QString ConvertTo;
     enum { ExactSize = true };
-    static int size(const QLatin1String &a) { return qstrlen(a.latin1()); }
-    static inline void appendTo(const QLatin1String &a, QChar *&out)
+    static int size(const QLatin1String a) { return a.size(); }
+    static inline void appendTo(const QLatin1String a, QChar *&out)
     {
-        for (const char *s = a.latin1(); *s; )
-            *out++ = QLatin1Char(*s++);
+        appendLatin1To(a.latin1(), a.size(), out);
+        out += a.size();
     }
-    static inline void appendTo(const QLatin1String &a, char *&out)
+    static inline void appendTo(const QLatin1String a, char *&out)
     {
-        for (const char *s = a.latin1(); *s; )
-            *out++ = *s++;
-    }
-};
-
-template <> struct QConcatenable<QLatin1Literal>
-{
-    typedef QLatin1Literal type;
-    typedef QString ConvertTo;
-    enum { ExactSize = true };
-    static int size(const QLatin1Literal &a) { return a.size(); }
-    static inline void appendTo(const QLatin1Literal &a, QChar *&out)
-    {
-        for (const char *s = a.data(); *s; )
-            *out++ = QLatin1Char(*s++);
-    }
-    static inline void appendTo(const QLatin1Literal &a, char *&out)
-    {
-        for (const char *s = a.data(); *s; )
-            *out++ = *s++;
+        if (a.data()) {
+            for (const char *s = a.data(); *s; )
+                *out++ = *s++;
+        }
     }
 };
 
@@ -277,10 +263,6 @@ template <> struct QConcatenable<QString> : private QAbstractConcatenable
         memcpy(out, reinterpret_cast<const char*>(a.constData()), sizeof(QChar) * n);
         out += n;
     }
-#ifndef QT_NO_CAST_TO_ASCII
-    static inline QT_ASCII_CAST_WARN void appendTo(const QString &a, char *&out)
-    { convertToAscii(a.constData(), a.length(), out); }
-#endif
 };
 
 template <> struct QConcatenable<QStringRef> : private QAbstractConcatenable
@@ -295,11 +277,6 @@ template <> struct QConcatenable<QStringRef> : private QAbstractConcatenable
         memcpy(out, reinterpret_cast<const char*>(a.constData()), sizeof(QChar) * n);
         out += n;
     }
-#ifndef QT_NO_CAST_TO_ASCII
-    static inline QT_ASCII_CAST_WARN void appendTo(const QStringRef &a, char *&out)
-    { convertToAscii(a.constData(), a.length(), out); }
-#endif
-
 };
 
 template <int N> struct QConcatenable<char[N]> : private QAbstractConcatenable
@@ -311,7 +288,7 @@ template <int N> struct QConcatenable<char[N]> : private QAbstractConcatenable
 #ifndef QT_NO_CAST_FROM_ASCII
     static inline void QT_ASCII_CAST_WARN appendTo(const char a[N], QChar *&out)
     {
-        QAbstractConcatenable::convertFromAscii(a, N, out);
+        QAbstractConcatenable::convertFromAscii(a, N - 1, out);
     }
 #endif
     static inline void appendTo(const char a[N], char *&out)
@@ -330,7 +307,7 @@ template <int N> struct QConcatenable<const char[N]> : private QAbstractConcaten
 #ifndef QT_NO_CAST_FROM_ASCII
     static inline void QT_ASCII_CAST_WARN appendTo(const char a[N], QChar *&out)
     {
-        QAbstractConcatenable::convertFromAscii(a, N, out);
+        QAbstractConcatenable::convertFromAscii(a, N - 1, out);
     }
 #endif
     static inline void appendTo(const char a[N], char *&out)
@@ -366,10 +343,9 @@ template <> struct QConcatenable<QByteArray> : private QAbstractConcatenable
     enum { ExactSize = false };
     static int size(const QByteArray &ba) { return ba.size(); }
 #ifndef QT_NO_CAST_FROM_ASCII
-    static inline void appendTo(const QByteArray &ba, QChar *&out)
+    static inline QT_ASCII_CAST_WARN void appendTo(const QByteArray &ba, QChar *&out)
     {
-        // adding 1 because convertFromAscii expects the size including the null-termination
-        QAbstractConcatenable::convertFromAscii(ba.constData(), ba.size() + 1, out);
+        QAbstractConcatenable::convertFromAscii(ba.constData(), ba.size(), out);
     }
 #endif
     static inline void appendTo(const QByteArray &ba, char *&out)
@@ -381,12 +357,6 @@ template <> struct QConcatenable<QByteArray> : private QAbstractConcatenable
     }
 };
 
-namespace QtStringBuilder {
-    template <typename A, typename B> struct ConvertToTypeHelper
-    { typedef A ConvertTo; };
-    template <typename T> struct ConvertToTypeHelper<T, QString>
-    { typedef QString ConvertTo; };
-}
 
 template <typename A, typename B>
 struct QConcatenable< QStringBuilder<A, B> >
@@ -423,21 +393,33 @@ operator+(const A &a, const B &b)
 }
 #endif
 
+namespace QtStringBuilder {
 template <typename A, typename B>
-QByteArray &operator+=(QByteArray &a, const QStringBuilder<A, B> &b)
+QByteArray &appendToByteArray(QByteArray &a, const QStringBuilder<A, B> &b, char)
 {
-#ifndef QT_NO_CAST_TO_ASCII
-    if (sizeof(typename QConcatenable< QStringBuilder<A, B> >::ConvertTo::value_type) == sizeof(QChar)) {
-        //it is not save to optimize as in utf8 it is not possible to compute the size
-        return a += QString(b);
-    }
-#endif
+    // append 8-bit data to a byte array
     int len = a.size() + QConcatenable< QStringBuilder<A, B> >::size(b);
     a.reserve(len);
     char *it = a.data() + a.size();
     QConcatenable< QStringBuilder<A, B> >::appendTo(b, it);
     a.resize(len); //we need to resize after the appendTo for the case str+=foo+str
     return a;
+}
+
+#ifndef QT_NO_CAST_TO_ASCII
+template <typename A, typename B>
+QByteArray &appendToByteArray(QByteArray &a, const QStringBuilder<A, B> &b, QChar)
+{
+    return a += QString(b).toUtf8();
+}
+#endif
+}
+
+template <typename A, typename B>
+QByteArray &operator+=(QByteArray &a, const QStringBuilder<A, B> &b)
+{
+    return QtStringBuilder::appendToByteArray(a, b,
+                                              typename QConcatenable< QStringBuilder<A, B> >::ConvertTo::value_type());
 }
 
 template <typename A, typename B>
@@ -453,7 +435,5 @@ QString &operator+=(QString &a, const QStringBuilder<A, B> &b)
 
 
 QT_END_NAMESPACE
-
-QT_END_HEADER
 
 #endif // QSTRINGBUILDER_H

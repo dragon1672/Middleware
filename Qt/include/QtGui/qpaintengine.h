@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtGui module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -47,11 +47,8 @@
 #include <QtCore/qscopedpointer.h>
 #include <QtGui/qpainter.h>
 
-QT_BEGIN_HEADER
-
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Gui)
 
 class QFontEngine;
 class QLineF;
@@ -191,10 +188,6 @@ public:
     void setSystemRect(const QRect &rect);
     QRect systemRect() const;
 
-#ifdef Q_WS_WIN
-    virtual HDC getDC() const;
-    virtual void releaseDC(HDC hdc) const;
-#endif
 
     virtual QPoint coordinateOffset() const;
 
@@ -203,7 +196,7 @@ public:
         Windows,
         QuickDraw, CoreGraphics, MacPrinter,
         QWindowSystem,
-        PostScript,
+        PostScript,   // ### Qt 6: Remove, update documentation
         OpenGL,
         Picture,
         SVG,
@@ -214,6 +207,7 @@ public:
         OpenGL2,
         PaintBuffer,
         Blitter,
+        Direct2D,
 
         User = 50,    // first user type id
         MaxUser = 100 // last user type id
@@ -254,26 +248,9 @@ private:
     friend class QFontEngineBox;
     friend class QFontEngineMac;
     friend class QFontEngineWin;
-#ifndef QT_NO_FREETYPE
-    friend class QFontEngineFT;
-#endif
-#ifndef QT_NO_QWS_QPF
-    friend class QFontEngineQPF1;
-#endif
-#ifndef QT_NO_QWS_QPF2
-    friend class QFontEngineQPF;
-#endif
-    friend class QPSPrintEngine;
     friend class QMacPrintEngine;
     friend class QMacPrintEnginePrivate;
-#ifdef Q_WS_QWS
-    friend class QtopiaPrintEngine;
-    friend class QtopiaPrintEnginePrivate;
-    friend class QProxyFontEngine;
-#endif
-#ifdef Q_WS_QPA
     friend class QFontEngineQPA;
-#endif
     friend class QPainter;
     friend class QPainterPrivate;
     friend class QWidget;
@@ -282,7 +259,7 @@ private:
     friend class QWin32PaintEnginePrivate;
     friend class QMacCGContext;
     friend class QPreviewPaintEngine;
-    friend class QX11GLPixmapData;
+    friend class QX11GLPlatformPixmap;
 };
 
 
@@ -362,7 +339,5 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(QPaintEngine::PaintEngineFeatures)
 Q_DECLARE_OPERATORS_FOR_FLAGS(QPaintEngine::DirtyFlags)
 
 QT_END_NAMESPACE
-
-QT_END_HEADER
 
 #endif // QPAINTENGINE_H

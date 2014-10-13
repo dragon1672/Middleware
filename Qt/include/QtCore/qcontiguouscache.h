@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -46,12 +46,9 @@
 #include <limits.h>
 #include <new>
 
-QT_BEGIN_HEADER
-
 QT_BEGIN_NAMESPACE
 
 #undef QT_QCONTIGUOUSCACHE_DEBUG
-QT_MODULE(Core)
 
 
 struct Q_CORE_EXPORT QContiguousCacheData
@@ -69,8 +66,8 @@ struct Q_CORE_EXPORT QContiguousCacheData
     // there will be an 8 byte gap here if T requires 16-byte alignment
     //  (such as long double on 64-bit platforms, __int128, __float128)
 
-    static QContiguousCacheData *allocate(int size, int alignment);
-    static void free(QContiguousCacheData *data);
+    static QContiguousCacheData *allocateData(int size, int alignment);
+    static void freeData(QContiguousCacheData *data);
 
 #ifdef QT_QCONTIGUOUSCACHE_DEBUG
     void dump() const;
@@ -83,7 +80,7 @@ struct QContiguousCacheTypedData: private QContiguousCacheData
     // private inheritance to avoid aliasing warningss
     T array[1];
 
-    static inline void free(QContiguousCacheTypedData *data) { QContiguousCacheData::free(data); }
+    static inline void freeData(QContiguousCacheTypedData *data) { QContiguousCacheData::freeData(data); }
 };
 
 template<typename T>
@@ -103,11 +100,13 @@ public:
     explicit QContiguousCache(int capacity = 0);
     QContiguousCache(const QContiguousCache<T> &v) : d(v.d) { d->ref.ref(); if (!d->sharable) detach_helper(); }
 
-    inline ~QContiguousCache() { if (!d) return; if (!d->ref.deref()) free(p); }
+    inline ~QContiguousCache() { if (!d) return; if (!d->ref.deref()) freeData(p); }
 
-    inline void detach() { if (d->ref != 1) detach_helper(); }
-    inline bool isDetached() const { return d->ref == 1; }
+    inline void detach() { if (d->ref.load() != 1) detach_helper(); }
+    inline bool isDetached() const { return d->ref.load() == 1; }
+#if QT_SUPPORTS(UNSHARABLE_CONTAINERS)
     inline void setSharable(bool sharable) { if (!sharable) detach(); d->sharable = sharable; }
+#endif
 
     QContiguousCache<T> &operator=(const QContiguousCache<T> &other);
 #ifdef Q_COMPILER_RVALUE_REFS
@@ -162,8 +161,8 @@ public:
 private:
     void detach_helper();
 
-    QContiguousCacheData *malloc(int aalloc);
-    void free(Data *x);
+    QContiguousCacheData *allocateData(int aalloc);
+    void freeData(Data *x);
     int sizeOfTypedData() {
         // this is more or less the same as sizeof(Data), except that it doesn't
         // count the padding at the end
@@ -171,11 +170,7 @@ private:
     }
     int alignOfTypedData() const
     {
-#ifdef Q_ALIGNOF
         return qMax<int>(sizeof(void*), Q_ALIGNOF(Data));
-#else
-        return 0;
-#endif
     }
 };
 
@@ -184,8 +179,8 @@ void QContiguousCache<T>::detach_helper()
 {
     union { QContiguousCacheData *d; QContiguousCacheTypedData<T> *p; } x;
 
-    x.d = malloc(d->alloc);
-    x.d->ref = 1;
+    x.d = allocateData(d->alloc);
+    x.d->ref.store(1);
     x.d->count = d->count;
     x.d->start = d->start;
     x.d->offset = d->offset;
@@ -211,7 +206,7 @@ void QContiguousCache<T>::detach_helper()
     }
 
     if (!d->ref.deref())
-        free(p);
+        freeData(p);
     d = x.d;
 }
 
@@ -222,7 +217,7 @@ void QContiguousCache<T>::setCapacity(int asize)
         return;
     detach();
     union { QContiguousCacheData *d; QContiguousCacheTypedData<T> *p; } x;
-    x.d = malloc(asize);
+    x.d = allocateData(asize);
     x.d->alloc = asize;
     x.d->count = qMin(d->count, asize);
     x.d->offset = d->offset + d->count - x.d->count;
@@ -251,14 +246,14 @@ void QContiguousCache<T>::setCapacity(int asize)
         }
     }
     /* free old */
-    free(p);
+    freeData(p);
     d = x.d;
 }
 
 template <typename T>
 void QContiguousCache<T>::clear()
 {
-    if (d->ref == 1) {
+    if (d->ref.load() == 1) {
         if (QTypeInfo<T>::isComplex) {
             int oldcount = d->count;
             T * i = p->array + d->start;
@@ -273,27 +268,27 @@ void QContiguousCache<T>::clear()
         d->count = d->start = d->offset = 0;
     } else {
         union { QContiguousCacheData *d; QContiguousCacheTypedData<T> *p; } x;
-        x.d = malloc(d->alloc);
-        x.d->ref = 1;
+        x.d = allocateData(d->alloc);
+        x.d->ref.store(1);
         x.d->alloc = d->alloc;
         x.d->count = x.d->start = x.d->offset = 0;
         x.d->sharable = true;
-        if (!d->ref.deref()) free(p);
+        if (!d->ref.deref()) freeData(p);
         d = x.d;
     }
 }
 
 template <typename T>
-inline QContiguousCacheData *QContiguousCache<T>::malloc(int aalloc)
+inline QContiguousCacheData *QContiguousCache<T>::allocateData(int aalloc)
 {
-    return QContiguousCacheData::allocate(sizeOfTypedData() + (aalloc - 1) * sizeof(T), alignOfTypedData());
+    return QContiguousCacheData::allocateData(sizeOfTypedData() + (aalloc - 1) * sizeof(T), alignOfTypedData());
 }
 
 template <typename T>
 QContiguousCache<T>::QContiguousCache(int cap)
 {
-    d = malloc(cap);
-    d->ref = 1;
+    d = allocateData(cap);
+    d->ref.store(1);
     d->alloc = cap;
     d->count = d->start = d->offset = 0;
     d->sharable = true;
@@ -304,7 +299,7 @@ QContiguousCache<T> &QContiguousCache<T>::operator=(const QContiguousCache<T> &o
 {
     other.d->ref.ref();
     if (!d->ref.deref())
-        free(d);
+        freeData(d);
     d = other.d;
     if (!d->sharable)
         detach_helper();
@@ -328,7 +323,7 @@ bool QContiguousCache<T>::operator==(const QContiguousCache<T> &other) const
 }
 
 template <typename T>
-void QContiguousCache<T>::free(Data *x)
+void QContiguousCache<T>::freeData(Data *x)
 {
     if (QTypeInfo<T>::isComplex) {
         int oldcount = d->count;
@@ -341,11 +336,13 @@ void QContiguousCache<T>::free(Data *x)
                 i = p->array;
         }
     }
-    x->free(x);
+    x->freeData(x);
 }
 template <typename T>
 void QContiguousCache<T>::append(const T &value)
 {
+    if (!d->alloc)
+        return;     // zero capacity
     detach();
     if (QTypeInfo<T>::isComplex) {
         if (d->count == d->alloc)
@@ -367,6 +364,8 @@ void QContiguousCache<T>::append(const T &value)
 template<typename T>
 void QContiguousCache<T>::prepend(const T &value)
 {
+    if (!d->alloc)
+        return;     // zero capacity
     detach();
     if (d->start)
         d->start--;
@@ -390,12 +389,16 @@ template<typename T>
 void QContiguousCache<T>::insert(int pos, const T &value)
 {
     Q_ASSERT_X(pos >= 0 && pos < INT_MAX, "QContiguousCache<T>::insert", "index out of range");
+    if (!d->alloc)
+        return;     // zero capacity
     detach();
     if (containsIndex(pos)) {
-        if(QTypeInfo<T>::isComplex)
+        if (QTypeInfo<T>::isComplex) {
+            (p->array + pos % d->alloc)->~T();
             new (p->array + pos % d->alloc) T(value);
-        else
+        } else {
             p->array[pos % d->alloc] = value;
+        }
     } else if (pos == d->offset-1)
         prepend(value);
     else if (pos == d->offset+d->count)
@@ -460,7 +463,5 @@ inline T QContiguousCache<T>::takeLast()
 { T t = last(); removeLast(); return t; }
 
 QT_END_NAMESPACE
-
-QT_END_HEADER
 
 #endif

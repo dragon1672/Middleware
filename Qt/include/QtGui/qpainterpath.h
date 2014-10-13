@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtGui module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -49,17 +49,15 @@
 #include <QtCore/qvector.h>
 #include <QtCore/qscopedpointer.h>
 
-QT_BEGIN_HEADER
-
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Gui)
 
 class QFont;
 class QPainterPathPrivate;
 struct QPainterPathPrivateDeleter;
 class QPainterPathData;
 class QPainterPathStrokerPrivate;
+class QPen;
 class QPolygonF;
 class QRegion;
 class QVectorPath;
@@ -166,7 +164,7 @@ public:
     Qt::FillRule fillRule() const;
     void setFillRule(Qt::FillRule fillRule);
 
-    inline bool isEmpty() const;
+    bool isEmpty() const;
 
     QPainterPath toReversed() const;
     QList<QPolygonF> toSubpathPolygons(const QMatrix &matrix = QMatrix()) const;
@@ -176,9 +174,9 @@ public:
     QList<QPolygonF> toFillPolygons(const QTransform &matrix) const;
     QPolygonF toFillPolygon(const QTransform &matrix) const;
 
-    inline int elementCount() const;
-    inline const QPainterPath::Element &elementAt(int i) const;
-    inline void setElementPositionAt(int i, qreal x, qreal y);
+    int elementCount() const;
+    QPainterPath::Element elementAt(int i) const;
+    void setElementPositionAt(int i, qreal x, qreal y);
 
     qreal   length() const;
     qreal   percentAtLength(qreal t) const;
@@ -212,7 +210,7 @@ private:
 
     inline void ensureData() { if (!d_ptr) ensureData_helper(); }
     void ensureData_helper();
-    inline void detach();
+    void detach();
     void detach_helper();
     void setDirty(bool);
     void computeBoundingRect() const;
@@ -234,26 +232,6 @@ private:
 #endif
 };
 
-class QPainterPathPrivate
-{
-public:
-    friend class QPainterPath;
-    friend class QPainterPathData;
-    friend class QPainterPathStroker;
-    friend class QPainterPathStrokerPrivate;
-    friend class QMatrix;
-    friend class QTransform;
-    friend class QVectorPath;
-    friend struct QPainterPathPrivateDeleter;
-#ifndef QT_NO_DATASTREAM
-    friend Q_GUI_EXPORT QDataStream &operator<<(QDataStream &, const QPainterPath &);
-    friend Q_GUI_EXPORT QDataStream &operator>>(QDataStream &, QPainterPath &);
-#endif
-private:
-    QAtomicInt ref;
-    QVector<QPainterPath::Element> elements;
-};
-
 Q_DECLARE_TYPEINFO(QPainterPath::Element, Q_PRIMITIVE_TYPE);
 
 #ifndef QT_NO_DATASTREAM
@@ -266,6 +244,7 @@ class Q_GUI_EXPORT QPainterPathStroker
     Q_DECLARE_PRIVATE(QPainterPathStroker)
 public:
     QPainterPathStroker();
+    explicit QPainterPathStroker(const QPen &pen);
     ~QPainterPathStroker();
 
     void setWidth(qreal width);
@@ -389,47 +368,11 @@ inline void QPainterPath::translate(const QPointF &offset)
 inline QPainterPath QPainterPath::translated(const QPointF &offset) const
 { return translated(offset.x(), offset.y()); }
 
-inline bool QPainterPath::isEmpty() const
-{
-    return !d_ptr || (d_ptr->elements.size() == 1 && d_ptr->elements.first().type == MoveToElement);
-}
-
-inline int QPainterPath::elementCount() const
-{
-    return d_ptr ? d_ptr->elements.size() : 0;
-}
-
-inline const QPainterPath::Element &QPainterPath::elementAt(int i) const
-{
-    Q_ASSERT(d_ptr);
-    Q_ASSERT(i >= 0 && i < elementCount());
-    return d_ptr->elements.at(i);
-}
-
-inline void QPainterPath::setElementPositionAt(int i, qreal x, qreal y)
-{
-    Q_ASSERT(d_ptr);
-    Q_ASSERT(i >= 0 && i < elementCount());
-    detach();
-    QPainterPath::Element &e = d_ptr->elements[i];
-    e.x = x;
-    e.y = y;
-}
-
-
-inline void QPainterPath::detach()
-{
-    if (d_ptr->ref != 1)
-        detach_helper();
-    setDirty(true);
-}
 
 #ifndef QT_NO_DEBUG_STREAM
 Q_GUI_EXPORT QDebug operator<<(QDebug, const QPainterPath &);
 #endif
 
 QT_END_NAMESPACE
-
-QT_END_HEADER
 
 #endif // QPAINTERPATH_H

@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -44,48 +44,48 @@
 
 #include <QtCore/qnamespace.h>
 
-QT_BEGIN_HEADER
-
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
 
 class Q_CORE_EXPORT QSize
 {
 public:
-    QSize();
-    QSize(int w, int h);
+    Q_DECL_CONSTEXPR QSize();
+    Q_DECL_CONSTEXPR QSize(int w, int h);
 
-    bool isNull() const;
-    bool isEmpty() const;
-    bool isValid() const;
+    Q_DECL_CONSTEXPR inline bool isNull() const;
+    Q_DECL_CONSTEXPR inline bool isEmpty() const;
+    Q_DECL_CONSTEXPR inline bool isValid() const;
 
-    int width() const;
-    int height() const;
-    void setWidth(int w);
-    void setHeight(int h);
+    Q_DECL_CONSTEXPR inline int width() const;
+    Q_DECL_CONSTEXPR inline int height() const;
+    inline void setWidth(int w);
+    inline void setHeight(int h);
     void transpose();
+    Q_DECL_CONSTEXPR inline QSize transposed() const;
 
-    void scale(int w, int h, Qt::AspectRatioMode mode);
-    void scale(const QSize &s, Qt::AspectRatioMode mode);
+    inline void scale(int w, int h, Qt::AspectRatioMode mode);
+    inline void scale(const QSize &s, Qt::AspectRatioMode mode);
+    QSize scaled(int w, int h, Qt::AspectRatioMode mode) const;
+    QSize scaled(const QSize &s, Qt::AspectRatioMode mode) const;
 
-    QSize expandedTo(const QSize &) const;
-    QSize boundedTo(const QSize &) const;
+    Q_DECL_CONSTEXPR inline QSize expandedTo(const QSize &) const;
+    Q_DECL_CONSTEXPR inline QSize boundedTo(const QSize &) const;
 
-    int &rwidth();
-    int &rheight();
+    inline int &rwidth();
+    inline int &rheight();
 
-    QSize &operator+=(const QSize &);
-    QSize &operator-=(const QSize &);
-    QSize &operator*=(qreal c);
-    QSize &operator/=(qreal c);
+    inline QSize &operator+=(const QSize &);
+    inline QSize &operator-=(const QSize &);
+    inline QSize &operator*=(qreal c);
+    inline QSize &operator/=(qreal c);
 
-    friend inline bool operator==(const QSize &, const QSize &);
-    friend inline bool operator!=(const QSize &, const QSize &);
-    friend inline const QSize operator+(const QSize &, const QSize &);
-    friend inline const QSize operator-(const QSize &, const QSize &);
-    friend inline const QSize operator*(const QSize &, qreal);
-    friend inline const QSize operator*(qreal, const QSize &);
+    friend inline Q_DECL_CONSTEXPR bool operator==(const QSize &, const QSize &);
+    friend inline Q_DECL_CONSTEXPR bool operator!=(const QSize &, const QSize &);
+    friend inline Q_DECL_CONSTEXPR const QSize operator+(const QSize &, const QSize &);
+    friend inline Q_DECL_CONSTEXPR const QSize operator-(const QSize &, const QSize &);
+    friend inline Q_DECL_CONSTEXPR const QSize operator*(const QSize &, qreal);
+    friend inline Q_DECL_CONSTEXPR const QSize operator*(qreal, const QSize &);
     friend inline const QSize operator/(const QSize &, qreal);
 
 private:
@@ -108,25 +108,23 @@ Q_CORE_EXPORT QDataStream &operator>>(QDataStream &, QSize &);
   QSize inline functions
  *****************************************************************************/
 
-inline QSize::QSize()
-{ wd = ht = -1; }
+Q_DECL_CONSTEXPR inline QSize::QSize() : wd(-1), ht(-1) {}
 
-inline QSize::QSize(int w, int h)
-{ wd = w; ht = h; }
+Q_DECL_CONSTEXPR inline QSize::QSize(int w, int h) : wd(w), ht(h) {}
 
-inline bool QSize::isNull() const
+Q_DECL_CONSTEXPR inline bool QSize::isNull() const
 { return wd==0 && ht==0; }
 
-inline bool QSize::isEmpty() const
+Q_DECL_CONSTEXPR inline bool QSize::isEmpty() const
 { return wd<1 || ht<1; }
 
-inline bool QSize::isValid() const
+Q_DECL_CONSTEXPR inline bool QSize::isValid() const
 { return wd>=0 && ht>=0; }
 
-inline int QSize::width() const
+Q_DECL_CONSTEXPR inline int QSize::width() const
 { return wd; }
 
-inline int QSize::height() const
+Q_DECL_CONSTEXPR inline int QSize::height() const
 { return ht; }
 
 inline void QSize::setWidth(int w)
@@ -135,8 +133,17 @@ inline void QSize::setWidth(int w)
 inline void QSize::setHeight(int h)
 { ht = h; }
 
+Q_DECL_CONSTEXPR inline QSize QSize::transposed() const
+{ return QSize(ht, wd); }
+
 inline void QSize::scale(int w, int h, Qt::AspectRatioMode mode)
 { scale(QSize(w, h), mode); }
+
+inline void QSize::scale(const QSize &s, Qt::AspectRatioMode mode)
+{ *this = scaled(s, mode); }
+
+inline QSize QSize::scaled(int w, int h, Qt::AspectRatioMode mode) const
+{ return scaled(QSize(w, h), mode); }
 
 inline int &QSize::rwidth()
 { return wd; }
@@ -153,22 +160,22 @@ inline QSize &QSize::operator-=(const QSize &s)
 inline QSize &QSize::operator*=(qreal c)
 { wd = qRound(wd*c); ht = qRound(ht*c); return *this; }
 
-inline bool operator==(const QSize &s1, const QSize &s2)
+Q_DECL_CONSTEXPR inline bool operator==(const QSize &s1, const QSize &s2)
 { return s1.wd == s2.wd && s1.ht == s2.ht; }
 
-inline bool operator!=(const QSize &s1, const QSize &s2)
+Q_DECL_CONSTEXPR inline bool operator!=(const QSize &s1, const QSize &s2)
 { return s1.wd != s2.wd || s1.ht != s2.ht; }
 
-inline const QSize operator+(const QSize & s1, const QSize & s2)
+Q_DECL_CONSTEXPR inline const QSize operator+(const QSize & s1, const QSize & s2)
 { return QSize(s1.wd+s2.wd, s1.ht+s2.ht); }
 
-inline const QSize operator-(const QSize &s1, const QSize &s2)
+Q_DECL_CONSTEXPR inline const QSize operator-(const QSize &s1, const QSize &s2)
 { return QSize(s1.wd-s2.wd, s1.ht-s2.ht); }
 
-inline const QSize operator*(const QSize &s, qreal c)
+Q_DECL_CONSTEXPR inline const QSize operator*(const QSize &s, qreal c)
 { return QSize(qRound(s.wd*c), qRound(s.ht*c)); }
 
-inline const QSize operator*(qreal c, const QSize &s)
+Q_DECL_CONSTEXPR inline const QSize operator*(qreal c, const QSize &s)
 { return QSize(qRound(s.wd*c), qRound(s.ht*c)); }
 
 inline QSize &QSize::operator/=(qreal c)
@@ -184,12 +191,12 @@ inline const QSize operator/(const QSize &s, qreal c)
     return QSize(qRound(s.wd/c), qRound(s.ht/c));
 }
 
-inline QSize QSize::expandedTo(const QSize & otherSize) const
+Q_DECL_CONSTEXPR inline QSize QSize::expandedTo(const QSize & otherSize) const
 {
     return QSize(qMax(wd,otherSize.wd), qMax(ht,otherSize.ht));
 }
 
-inline QSize QSize::boundedTo(const QSize & otherSize) const
+Q_DECL_CONSTEXPR inline QSize QSize::boundedTo(const QSize & otherSize) const
 {
     return QSize(qMin(wd,otherSize.wd), qMin(ht,otherSize.ht));
 }
@@ -202,43 +209,46 @@ Q_CORE_EXPORT QDebug operator<<(QDebug, const QSize &);
 class Q_CORE_EXPORT QSizeF
 {
 public:
-    QSizeF();
-    QSizeF(const QSize &sz);
-    QSizeF(qreal w, qreal h);
+    Q_DECL_CONSTEXPR QSizeF();
+    Q_DECL_CONSTEXPR QSizeF(const QSize &sz);
+    Q_DECL_CONSTEXPR QSizeF(qreal w, qreal h);
 
-    bool isNull() const;
-    bool isEmpty() const;
-    bool isValid() const;
+    inline bool isNull() const;
+    Q_DECL_CONSTEXPR inline bool isEmpty() const;
+    Q_DECL_CONSTEXPR inline bool isValid() const;
 
-    qreal width() const;
-    qreal height() const;
-    void setWidth(qreal w);
-    void setHeight(qreal h);
+    Q_DECL_CONSTEXPR inline qreal width() const;
+    Q_DECL_CONSTEXPR inline qreal height() const;
+    inline void setWidth(qreal w);
+    inline void setHeight(qreal h);
     void transpose();
+    Q_DECL_CONSTEXPR inline QSizeF transposed() const;
 
-    void scale(qreal w, qreal h, Qt::AspectRatioMode mode);
-    void scale(const QSizeF &s, Qt::AspectRatioMode mode);
+    inline void scale(qreal w, qreal h, Qt::AspectRatioMode mode);
+    inline void scale(const QSizeF &s, Qt::AspectRatioMode mode);
+    QSizeF scaled(qreal w, qreal h, Qt::AspectRatioMode mode) const;
+    QSizeF scaled(const QSizeF &s, Qt::AspectRatioMode mode) const;
 
-    QSizeF expandedTo(const QSizeF &) const;
-    QSizeF boundedTo(const QSizeF &) const;
+    Q_DECL_CONSTEXPR inline QSizeF expandedTo(const QSizeF &) const;
+    Q_DECL_CONSTEXPR inline QSizeF boundedTo(const QSizeF &) const;
 
-    qreal &rwidth();
-    qreal &rheight();
+    inline qreal &rwidth();
+    inline qreal &rheight();
 
-    QSizeF &operator+=(const QSizeF &);
-    QSizeF &operator-=(const QSizeF &);
-    QSizeF &operator*=(qreal c);
-    QSizeF &operator/=(qreal c);
+    inline QSizeF &operator+=(const QSizeF &);
+    inline QSizeF &operator-=(const QSizeF &);
+    inline QSizeF &operator*=(qreal c);
+    inline QSizeF &operator/=(qreal c);
 
-    friend inline bool operator==(const QSizeF &, const QSizeF &);
-    friend inline bool operator!=(const QSizeF &, const QSizeF &);
-    friend inline const QSizeF operator+(const QSizeF &, const QSizeF &);
-    friend inline const QSizeF operator-(const QSizeF &, const QSizeF &);
-    friend inline const QSizeF operator*(const QSizeF &, qreal);
-    friend inline const QSizeF operator*(qreal, const QSizeF &);
+    friend Q_DECL_CONSTEXPR inline bool operator==(const QSizeF &, const QSizeF &);
+    friend Q_DECL_CONSTEXPR inline bool operator!=(const QSizeF &, const QSizeF &);
+    friend Q_DECL_CONSTEXPR inline const QSizeF operator+(const QSizeF &, const QSizeF &);
+    friend Q_DECL_CONSTEXPR inline const QSizeF operator-(const QSizeF &, const QSizeF &);
+    friend Q_DECL_CONSTEXPR inline const QSizeF operator*(const QSizeF &, qreal);
+    friend Q_DECL_CONSTEXPR inline const QSizeF operator*(qreal, const QSizeF &);
     friend inline const QSizeF operator/(const QSizeF &, qreal);
 
-    inline QSize toSize() const;
+    Q_DECL_CONSTEXPR inline QSize toSize() const;
 
 private:
     qreal wd;
@@ -261,30 +271,25 @@ Q_CORE_EXPORT QDataStream &operator>>(QDataStream &, QSizeF &);
   QSizeF inline functions
  *****************************************************************************/
 
-inline QSizeF::QSizeF()
-{ wd = ht = -1.; }
+Q_DECL_CONSTEXPR inline QSizeF::QSizeF() : wd(-1.), ht(-1.) {}
 
-inline QSizeF::QSizeF(const QSize &sz)
-    : wd(sz.width()), ht(sz.height())
-{
-}
+Q_DECL_CONSTEXPR inline QSizeF::QSizeF(const QSize &sz) : wd(sz.width()), ht(sz.height()) {}
 
-inline QSizeF::QSizeF(qreal w, qreal h)
-{ wd = w; ht = h; }
+Q_DECL_CONSTEXPR inline QSizeF::QSizeF(qreal w, qreal h) : wd(w), ht(h) {}
 
 inline bool QSizeF::isNull() const
 { return qIsNull(wd) && qIsNull(ht); }
 
-inline bool QSizeF::isEmpty() const
+Q_DECL_CONSTEXPR inline bool QSizeF::isEmpty() const
 { return wd <= 0. || ht <= 0.; }
 
-inline bool QSizeF::isValid() const
+Q_DECL_CONSTEXPR inline bool QSizeF::isValid() const
 { return wd >= 0. && ht >= 0.; }
 
-inline qreal QSizeF::width() const
+Q_DECL_CONSTEXPR inline qreal QSizeF::width() const
 { return wd; }
 
-inline qreal QSizeF::height() const
+Q_DECL_CONSTEXPR inline qreal QSizeF::height() const
 { return ht; }
 
 inline void QSizeF::setWidth(qreal w)
@@ -293,8 +298,17 @@ inline void QSizeF::setWidth(qreal w)
 inline void QSizeF::setHeight(qreal h)
 { ht = h; }
 
+Q_DECL_CONSTEXPR inline QSizeF QSizeF::transposed() const
+{ return QSizeF(ht, wd); }
+
 inline void QSizeF::scale(qreal w, qreal h, Qt::AspectRatioMode mode)
 { scale(QSizeF(w, h), mode); }
+
+inline void QSizeF::scale(const QSizeF &s, Qt::AspectRatioMode mode)
+{ *this = scaled(s, mode); }
+
+inline QSizeF QSizeF::scaled(qreal w, qreal h, Qt::AspectRatioMode mode) const
+{ return scaled(QSizeF(w, h), mode); }
 
 inline qreal &QSizeF::rwidth()
 { return wd; }
@@ -311,22 +325,22 @@ inline QSizeF &QSizeF::operator-=(const QSizeF &s)
 inline QSizeF &QSizeF::operator*=(qreal c)
 { wd *= c; ht *= c; return *this; }
 
-inline bool operator==(const QSizeF &s1, const QSizeF &s2)
+Q_DECL_CONSTEXPR inline bool operator==(const QSizeF &s1, const QSizeF &s2)
 { return qFuzzyCompare(s1.wd, s2.wd) && qFuzzyCompare(s1.ht, s2.ht); }
 
-inline bool operator!=(const QSizeF &s1, const QSizeF &s2)
+Q_DECL_CONSTEXPR inline bool operator!=(const QSizeF &s1, const QSizeF &s2)
 { return !qFuzzyCompare(s1.wd, s2.wd) || !qFuzzyCompare(s1.ht, s2.ht); }
 
-inline const QSizeF operator+(const QSizeF & s1, const QSizeF & s2)
+Q_DECL_CONSTEXPR inline const QSizeF operator+(const QSizeF & s1, const QSizeF & s2)
 { return QSizeF(s1.wd+s2.wd, s1.ht+s2.ht); }
 
-inline const QSizeF operator-(const QSizeF &s1, const QSizeF &s2)
+Q_DECL_CONSTEXPR inline const QSizeF operator-(const QSizeF &s1, const QSizeF &s2)
 { return QSizeF(s1.wd-s2.wd, s1.ht-s2.ht); }
 
-inline const QSizeF operator*(const QSizeF &s, qreal c)
+Q_DECL_CONSTEXPR inline const QSizeF operator*(const QSizeF &s, qreal c)
 { return QSizeF(s.wd*c, s.ht*c); }
 
-inline const QSizeF operator*(qreal c, const QSizeF &s)
+Q_DECL_CONSTEXPR inline const QSizeF operator*(qreal c, const QSizeF &s)
 { return QSizeF(s.wd*c, s.ht*c); }
 
 inline QSizeF &QSizeF::operator/=(qreal c)
@@ -342,17 +356,17 @@ inline const QSizeF operator/(const QSizeF &s, qreal c)
     return QSizeF(s.wd/c, s.ht/c);
 }
 
-inline QSizeF QSizeF::expandedTo(const QSizeF & otherSize) const
+Q_DECL_CONSTEXPR inline QSizeF QSizeF::expandedTo(const QSizeF & otherSize) const
 {
     return QSizeF(qMax(wd,otherSize.wd), qMax(ht,otherSize.ht));
 }
 
-inline QSizeF QSizeF::boundedTo(const QSizeF & otherSize) const
+Q_DECL_CONSTEXPR inline QSizeF QSizeF::boundedTo(const QSizeF & otherSize) const
 {
     return QSizeF(qMin(wd,otherSize.wd), qMin(ht,otherSize.ht));
 }
 
-inline QSize QSizeF::toSize() const
+Q_DECL_CONSTEXPR inline QSize QSizeF::toSize() const
 {
     return QSize(qRound(wd), qRound(ht));
 }
@@ -362,7 +376,5 @@ Q_CORE_EXPORT QDebug operator<<(QDebug, const QSizeF &);
 #endif
 
 QT_END_NAMESPACE
-
-QT_END_HEADER
 
 #endif // QSIZE_H

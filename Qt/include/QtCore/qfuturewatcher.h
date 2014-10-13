@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -44,28 +44,24 @@
 
 #include <QtCore/qfuture.h>
 
+#ifndef QT_NO_QFUTURE
+
 #include <QtCore/qobject.h>
 
-QT_BEGIN_HEADER
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
 
 class QEvent;
 
 class QFutureWatcherBasePrivate;
-
-#ifdef QT_NO_QFUTURE
-class QFutureInterfaceBase;
-#endif
-
 class Q_CORE_EXPORT QFutureWatcherBase : public QObject
 {
     Q_OBJECT
     Q_DECLARE_PRIVATE(QFutureWatcherBase)
 
 public:
-    QFutureWatcherBase(QObject *parent = 0);
+    explicit QFutureWatcherBase(QObject *parent = 0);
+    // de-inline dtor
 
     int progressValue() const;
     int progressMinimum() const;
@@ -104,8 +100,8 @@ public Q_SLOTS:
     void togglePaused();
 
 protected:
-    void connectNotify (const char * signal);
-    void disconnectNotify (const char * signal);
+    void connectNotify (const QMetaMethod &signal);
+    void disconnectNotify (const QMetaMethod &signal);
 
     // called from setFuture() implemented in template sub-classes
     void connectOutputInterface();
@@ -117,13 +113,11 @@ private:
     virtual QFutureInterfaceBase &futureInterface() = 0;
 };
 
-#ifndef QT_NO_QFUTURE
-
 template <typename T>
 class QFutureWatcher : public QFutureWatcherBase
 {
 public:
-    QFutureWatcher(QObject *_parent = 0)
+    explicit QFutureWatcher(QObject *_parent = 0)
         : QFutureWatcherBase(_parent)
     { }
     ~QFutureWatcher()
@@ -136,7 +130,7 @@ public:
     T result() const { return m_future.result(); }
     T resultAt(int index) const { return m_future.resultAt(index); }
 
-#ifdef qdoc
+#ifdef Q_QDOC
     int progressValue() const;
     int progressMinimum() const;
     int progressMaximum() const;
@@ -193,7 +187,7 @@ template <>
 class QFutureWatcher<void> : public QFutureWatcherBase
 {
 public:
-    QFutureWatcher(QObject *_parent = 0)
+    explicit QFutureWatcher(QObject *_parent = 0)
         : QFutureWatcherBase(_parent)
     { }
     ~QFutureWatcher()
@@ -219,9 +213,7 @@ Q_INLINE_TEMPLATE void QFutureWatcher<void>::setFuture(const QFuture<void> &_fut
     connectOutputInterface();
 }
 
-#endif // QT_NO_QFUTURE
-
 QT_END_NAMESPACE
-QT_END_HEADER
+#endif // QT_NO_QFUTURE
 
 #endif // QFUTUREWATCHER_H

@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -42,54 +42,52 @@
 #ifndef QLIST_H
 #define QLIST_H
 
-#include <QtCore/qiterator.h>
-#include <QtCore/qatomic.h>
 #include <QtCore/qalgorithms.h>
+#include <QtCore/qiterator.h>
+#include <QtCore/qrefcount.h>
 
-#ifndef QT_NO_STL
 #include <iterator>
 #include <list>
-#endif
+#include <algorithm>
 #ifdef Q_COMPILER_INITIALIZER_LISTS
-#include <iterator>
 #include <initializer_list>
 #endif
 
+#include <stdlib.h>
 #include <new>
 #include <limits.h>
 #include <string.h>
 
-QT_BEGIN_HEADER
+#ifdef Q_CC_MSVC
+#pragma warning( push )
+#pragma warning( disable : 4127 ) // "conditional expression is constant"
+#endif
 
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
 
 template <typename T> class QVector;
 template <typename T> class QSet;
 
 struct Q_CORE_EXPORT QListData {
     struct Data {
-        QBasicAtomicInt ref;
+        QtPrivate::RefCount ref;
         int alloc, begin, end;
-        uint sharable : 1;
         void *array[1];
     };
     enum { DataHeaderSize = sizeof(Data) - sizeof(void *) };
 
     Data *detach(int alloc);
     Data *detach_grow(int *i, int n);
-    Data *detach(); // remove in 5.0
-    Data *detach2(); // remove in 5.0
-    Data *detach3(); // remove in 5.0
     void realloc(int alloc);
-    static Data shared_null;
+    inline void dispose() { dispose(d); }
+    static void dispose(Data *d);
+    static const Data shared_null;
     Data *d;
     void **erase(void **xi);
     void **append(int n);
     void **append();
     void **append(const QListData &l);
-    void **append2(const QListData &l); // remove in 5.0
     void **prepend();
     void **insert(int i);
     void remove(int i);
@@ -118,35 +116,47 @@ class QList
     union { QListData p; QListData::Data *d; };
 
 public:
-    inline QList() : d(&QListData::shared_null) { d->ref.ref(); }
-    inline QList(const QList<T> &l) : d(l.d) { d->ref.ref(); if (!d->sharable) detach_helper(); }
+    inline QList() : d(const_cast<QListData::Data *>(&QListData::shared_null)) { }
+    QList(const QList<T> &l);
     ~QList();
     QList<T> &operator=(const QList<T> &l);
 #ifdef Q_COMPILER_RVALUE_REFS
-    inline QList &operator=(QList &&other)
+    inline QList(QList<T> &&other) : d(other.d) { other.d = const_cast<QListData::Data *>(&QListData::shared_null); }
+    inline QList &operator=(QList<T> &&other)
     { qSwap(d, other.d); return *this; }
 #endif
     inline void swap(QList<T> &other) { qSwap(d, other.d); }
 #ifdef Q_COMPILER_INITIALIZER_LISTS
-    inline QList(std::initializer_list<T> args) : d(&QListData::shared_null)
-    { d->ref.ref(); qCopy(args.begin(), args.end(), std::back_inserter(*this)); }
+    inline QList(std::initializer_list<T> args)
+        : d(const_cast<QListData::Data *>(&QListData::shared_null))
+    { std::copy(args.begin(), args.end(), std::back_inserter(*this)); }
 #endif
     bool operator==(const QList<T> &l) const;
     inline bool operator!=(const QList<T> &l) const { return !(*this == l); }
 
     inline int size() const { return p.size(); }
 
-    inline void detach() { if (d->ref != 1) detach_helper(); }
+    inline void detach() { if (d->ref.isShared()) detach_helper(); }
 
     inline void detachShared()
     {
         // The "this->" qualification is needed for GCCE.
-        if (d->ref != 1 && this->d != &QListData::shared_null)
+        if (d->ref.isShared() && this->d != &QListData::shared_null)
             detach_helper();
     }
 
-    inline bool isDetached() const { return d->ref == 1; }
-    inline void setSharable(bool sharable) { if (!sharable) detach(); d->sharable = sharable; }
+    inline bool isDetached() const { return !d->ref.isShared(); }
+#if QT_SUPPORTS(UNSHARABLE_CONTAINERS)
+    inline void setSharable(bool sharable)
+    {
+        if (sharable == d->ref.isSharable())
+            return;
+        if (!sharable)
+            detach();
+        if (d != &QListData::shared_null)
+            d->ref.setSharable(sharable);
+    }
+#endif
     inline bool isSharedWith(const QList<T> &other) const { return d == other.d; }
 
     inline bool isEmpty() const { return p.isEmpty(); }
@@ -173,7 +183,7 @@ public:
     void swap(int i, int j);
     int indexOf(const T &t, int from = 0) const;
     int lastIndexOf(const T &t, int from = -1) const;
-    QBool contains(const T &t) const;
+    bool contains(const T &t) const;
     int count(const T &t) const;
 
     class const_iterator;
@@ -259,16 +269,18 @@ public:
         inline const_iterator &operator-=(int j) { i-=j; return *this; }
         inline const_iterator operator+(int j) const { return const_iterator(i+j); }
         inline const_iterator operator-(int j) const { return const_iterator(i-j); }
-        inline int operator-(const_iterator j) const { return i - j.i; }
+        inline int operator-(const_iterator j) const { return int(i - j.i); }
     };
     friend class const_iterator;
 
     // stl style
     inline iterator begin() { detach(); return reinterpret_cast<Node *>(p.begin()); }
     inline const_iterator begin() const { return reinterpret_cast<Node *>(p.begin()); }
+    inline const_iterator cbegin() const { return reinterpret_cast<Node *>(p.begin()); }
     inline const_iterator constBegin() const { return reinterpret_cast<Node *>(p.begin()); }
     inline iterator end() { detach(); return reinterpret_cast<Node *>(p.end()); }
     inline const_iterator end() const { return reinterpret_cast<Node *>(p.end()); }
+    inline const_iterator cend() const { return reinterpret_cast<Node *>(p.end()); }
     inline const_iterator constEnd() const { return reinterpret_cast<Node *>(p.end()); }
     iterator insert(iterator before, const T &t);
     iterator erase(iterator pos);
@@ -310,20 +322,6 @@ public:
     typedef const value_type &const_reference;
     typedef qptrdiff difference_type;
 
-#ifdef QT3_SUPPORT
-    inline QT3_SUPPORT iterator remove(iterator pos) { return erase(pos); }
-    inline QT3_SUPPORT int remove(const T &t) { return removeAll(t); }
-    inline QT3_SUPPORT int findIndex(const T& t) const { return indexOf(t); }
-    inline QT3_SUPPORT iterator find(const T& t)
-    { int i = indexOf(t); return (i == -1 ? end() : (begin()+i)); }
-    inline QT3_SUPPORT const_iterator find (const T& t) const
-    { int i = indexOf(t); return (i == -1 ? end() : (begin()+i)); }
-    inline QT3_SUPPORT iterator find(iterator from, const T& t)
-    { int i = indexOf(t, from - begin()); return i == -1 ? end() : begin()+i; }
-    inline QT3_SUPPORT const_iterator find(const_iterator from, const T& t) const
-    { int i = indexOf(t, from - begin()); return i == -1 ? end() : begin()+i; }
-#endif
-
     // comfort
     QList<T> &operator+=(const QList<T> &l);
     inline QList<T> operator+(const QList<T> &l) const
@@ -341,23 +339,26 @@ public:
     static QList<T> fromVector(const QVector<T> &vector);
     static QList<T> fromSet(const QSet<T> &set);
 
-#ifndef QT_NO_STL
     static inline QList<T> fromStdList(const std::list<T> &list)
-    { QList<T> tmp; qCopy(list.begin(), list.end(), std::back_inserter(tmp)); return tmp; }
+    { QList<T> tmp; std::copy(list.begin(), list.end(), std::back_inserter(tmp)); return tmp; }
     inline std::list<T> toStdList() const
-    { std::list<T> tmp; qCopy(constBegin(), constEnd(), std::back_inserter(tmp)); return tmp; }
-#endif
+    { std::list<T> tmp; std::copy(constBegin(), constEnd(), std::back_inserter(tmp)); return tmp; }
 
 private:
     Node *detach_helper_grow(int i, int n);
     void detach_helper(int alloc);
     void detach_helper();
-    void free(QListData::Data *d);
+    void dealloc(QListData::Data *d);
 
     void node_construct(Node *n, const T &t);
     void node_destruct(Node *n);
     void node_copy(Node *from, Node *to, Node *src);
     void node_destruct(Node *from, Node *to);
+
+    bool isValidIterator(const iterator &i) const
+    {
+        return (constBegin().i <= i.i) && (i.i <= constEnd().i);
+    }
 };
 
 #if defined(Q_CC_BOR)
@@ -378,7 +379,7 @@ Q_INLINE_TEMPLATE void QList<T>::node_construct(Node *n, const T &t)
     else *reinterpret_cast<T*>(n) = t;
 #else
     // This is always safe, but penaltizes unoptimized builds a lot.
-    else ::memcpy(n, &t, sizeof(T));
+    else ::memcpy(n, static_cast<const void *>(&t), sizeof(T));
 #endif
 }
 
@@ -420,7 +421,7 @@ Q_INLINE_TEMPLATE void QList<T>::node_copy(Node *from, Node *to, Node *src)
         }
     } else {
         if (src != from && to - from > 0)
-            memcpy(from, src, (to - from) * sizeof(Node *));
+            memcpy(from, src, (to - from) * sizeof(Node));
     }
 }
 
@@ -437,21 +438,22 @@ template <typename T>
 Q_INLINE_TEMPLATE QList<T> &QList<T>::operator=(const QList<T> &l)
 {
     if (d != l.d) {
-        QListData::Data *o = l.d;
-        o->ref.ref();
-        if (!d->ref.deref())
-            free(d);
-        d = o;
-        if (!d->sharable)
-            detach_helper();
+        QList<T> tmp(l);
+        tmp.swap(*this);
     }
     return *this;
 }
 template <typename T>
 inline typename QList<T>::iterator QList<T>::insert(iterator before, const T &t)
 {
+    Q_ASSERT_X(isValidIterator(before), "QList::insert", "The specified iterator argument 'before' is invalid");
+
     int iBefore = int(before.i - reinterpret_cast<Node *>(p.begin()));
-    Node *n = reinterpret_cast<Node *>(p.insert(iBefore));
+    Node *n = 0;
+    if (d->ref.isShared())
+        n = detach_helper_grow(iBefore, 1);
+    else
+        n = reinterpret_cast<Node *>(p.insert(iBefore));
     QT_TRY {
         node_construct(n, t);
     } QT_CATCH(...) {
@@ -462,8 +464,16 @@ inline typename QList<T>::iterator QList<T>::insert(iterator before, const T &t)
 }
 template <typename T>
 inline typename QList<T>::iterator QList<T>::erase(iterator it)
-{ node_destruct(it.i);
- return reinterpret_cast<Node *>(p.erase(reinterpret_cast<void**>(it.i))); }
+{
+    Q_ASSERT_X(isValidIterator(it), "QList::erase", "The specified iterator argument 'it' is invalid");
+    if (d->ref.isShared()) {
+        int offset = int(it.i - reinterpret_cast<Node *>(p.begin()));
+        it = begin(); // implies detach()
+        it += offset;
+    }
+    node_destruct(it.i);
+    return reinterpret_cast<Node *>(p.erase(reinterpret_cast<void**>(it.i)));
+}
 template <typename T>
 inline const T &QList<T>::at(int i) const
 { Q_ASSERT_X(i >= 0 && i < p.size(), "QList<T>::at", "index out of range");
@@ -496,7 +506,7 @@ template <typename T>
 Q_OUTOFLINE_TEMPLATE void QList<T>::reserve(int alloc)
 {
     if (d->alloc < alloc) {
-        if (d->ref != 1)
+        if (d->ref.isShared())
             detach_helper(alloc);
         else
             p.realloc(alloc);
@@ -506,7 +516,7 @@ Q_OUTOFLINE_TEMPLATE void QList<T>::reserve(int alloc)
 template <typename T>
 Q_OUTOFLINE_TEMPLATE void QList<T>::append(const T &t)
 {
-    if (d->ref != 1) {
+    if (d->ref.isShared()) {
         Node *n = detach_helper_grow(INT_MAX, 1);
         QT_TRY {
             node_construct(n, t);
@@ -540,7 +550,7 @@ Q_OUTOFLINE_TEMPLATE void QList<T>::append(const T &t)
 template <typename T>
 inline void QList<T>::prepend(const T &t)
 {
-    if (d->ref != 1) {
+    if (d->ref.isShared()) {
         Node *n = detach_helper_grow(0, 1);
         QT_TRY {
             node_construct(n, t);
@@ -574,7 +584,7 @@ inline void QList<T>::prepend(const T &t)
 template <typename T>
 inline void QList<T>::insert(int i, const T &t)
 {
-    if (d->ref != 1) {
+    if (d->ref.isShared()) {
         Node *n = detach_helper_grow(i, 1);
         QT_TRY {
             node_construct(n, t);
@@ -636,7 +646,7 @@ inline void QList<T>::move(int from, int to)
 template<typename T>
 Q_OUTOFLINE_TEMPLATE QList<T> QList<T>::mid(int pos, int alength) const
 {
-    if (alength < 0 || pos + alength > size())
+    if (alength < 0 || pos > size() - alength)
         alength = size() - pos;
     if (pos == 0 && alength == size())
         return *this;
@@ -681,7 +691,7 @@ Q_OUTOFLINE_TEMPLATE typename QList<T>::Node *QList<T>::detach_helper_grow(int i
         node_copy(reinterpret_cast<Node *>(p.begin()),
                   reinterpret_cast<Node *>(p.begin() + i), n);
     } QT_CATCH(...) {
-        qFree(d);
+        p.dispose();
         d = x;
         QT_RETHROW;
     }
@@ -691,13 +701,13 @@ Q_OUTOFLINE_TEMPLATE typename QList<T>::Node *QList<T>::detach_helper_grow(int i
     } QT_CATCH(...) {
         node_destruct(reinterpret_cast<Node *>(p.begin()),
                       reinterpret_cast<Node *>(p.begin() + i));
-        qFree(d);
+        p.dispose();
         d = x;
         QT_RETHROW;
     }
 
     if (!x->ref.deref())
-        free(x);
+        dealloc(x);
 
     return reinterpret_cast<Node *>(p.begin() + i);
 }
@@ -710,13 +720,13 @@ Q_OUTOFLINE_TEMPLATE void QList<T>::detach_helper(int alloc)
     QT_TRY {
         node_copy(reinterpret_cast<Node *>(p.begin()), reinterpret_cast<Node *>(p.end()), n);
     } QT_CATCH(...) {
-        qFree(d);
+        p.dispose();
         d = x;
         QT_RETHROW;
     }
 
     if (!x->ref.deref())
-        free(x);
+        dealloc(x);
 }
 
 template <typename T>
@@ -726,10 +736,28 @@ Q_OUTOFLINE_TEMPLATE void QList<T>::detach_helper()
 }
 
 template <typename T>
+Q_OUTOFLINE_TEMPLATE QList<T>::QList(const QList<T> &l)
+    : d(l.d)
+{
+    if (!d->ref.ref()) {
+        p.detach(d->alloc);
+
+        QT_TRY {
+            node_copy(reinterpret_cast<Node *>(p.begin()),
+                    reinterpret_cast<Node *>(p.end()),
+                    reinterpret_cast<Node *>(l.p.begin()));
+        } QT_CATCH(...) {
+            QListData::dispose(d);
+            QT_RETHROW;
+        }
+    }
+}
+
+template <typename T>
 Q_OUTOFLINE_TEMPLATE QList<T>::~QList()
 {
     if (!d->ref.deref())
-        free(d);
+        dealloc(d);
 }
 
 template <typename T>
@@ -750,13 +778,12 @@ Q_OUTOFLINE_TEMPLATE bool QList<T>::operator==(const QList<T> &l) const
     return true;
 }
 
-// ### Qt 5: rename freeData() to avoid confusion with std::free()
 template <typename T>
-Q_OUTOFLINE_TEMPLATE void QList<T>::free(QListData::Data *data)
+Q_OUTOFLINE_TEMPLATE void QList<T>::dealloc(QListData::Data *data)
 {
     node_destruct(reinterpret_cast<Node *>(data->array + data->begin),
                   reinterpret_cast<Node *>(data->array + data->end));
-    qFree(data);
+    QListData::dispose(data);
 }
 
 
@@ -807,6 +834,19 @@ template <typename T>
 Q_OUTOFLINE_TEMPLATE typename QList<T>::iterator QList<T>::erase(typename QList<T>::iterator afirst,
                                                                  typename QList<T>::iterator alast)
 {
+    Q_ASSERT_X(isValidIterator(afirst), "QList::erase", "The specified iterator argument 'afirst' is invalid");
+    Q_ASSERT_X(isValidIterator(alast), "QList::erase", "The specified iterator argument 'alast' is invalid");
+
+    if (d->ref.isShared()) {
+        // ### A block is erased and a detach is needed. We should shrink and only copy relevant items.
+        int offsetfirst = int(afirst.i - reinterpret_cast<Node *>(p.begin()));
+        int offsetlast = int(alast.i - reinterpret_cast<Node *>(p.begin()));
+        afirst = begin(); // implies detach()
+        alast = afirst;
+        afirst += offsetfirst;
+        alast += offsetlast;
+    }
+
     for (Node *n = afirst.i; n < alast.i; ++n)
         node_destruct(n);
     int idx = afirst - begin();
@@ -821,9 +861,9 @@ Q_OUTOFLINE_TEMPLATE QList<T> &QList<T>::operator+=(const QList<T> &l)
         if (isEmpty()) {
             *this = l;
         } else {
-            Node *n = (d->ref != 1)
+            Node *n = (d->ref.isShared())
                       ? detach_helper_grow(INT_MAX, l.size())
-                      : reinterpret_cast<Node *>(p.append2(l.p));
+                      : reinterpret_cast<Node *>(p.append(l.p));
             QT_TRY {
                 node_copy(n, reinterpret_cast<Node *>(p.end()),
                           reinterpret_cast<Node *>(l.p.begin()));
@@ -877,14 +917,14 @@ Q_OUTOFLINE_TEMPLATE int QList<T>::lastIndexOf(const T &t, int from) const
 }
 
 template <typename T>
-Q_OUTOFLINE_TEMPLATE QBool QList<T>::contains(const T &t) const
+Q_OUTOFLINE_TEMPLATE bool QList<T>::contains(const T &t) const
 {
     Node *b = reinterpret_cast<Node *>(p.begin());
     Node *i = reinterpret_cast<Node *>(p.end());
     while (i-- != b)
         if (i->t() == t)
-            return QBool(true);
-    return QBool(false);
+            return true;
+    return false;
 }
 
 template <typename T>
@@ -904,6 +944,8 @@ Q_DECLARE_MUTABLE_SEQUENTIAL_ITERATOR(List)
 
 QT_END_NAMESPACE
 
-QT_END_HEADER
+#ifdef Q_CC_MSVC
+#pragma warning( pop )
+#endif
 
 #endif // QLIST_H

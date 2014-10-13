@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtGui module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -44,12 +44,10 @@
 
 #include <QtCore/qnamespace.h>
 #include <QtCore/qstring.h>
-
-QT_BEGIN_HEADER
+#include <QtCore/qobjectdefs.h>
 
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Gui)
 
 #ifndef QT_NO_SHORTCUT
 
@@ -62,7 +60,7 @@ Q_GUI_EXPORT QDataStream &operator<<(QDataStream &in, const QKeySequence &ks);
 Q_GUI_EXPORT QDataStream &operator>>(QDataStream &out, QKeySequence &ks);
 #endif
 
-#ifdef qdoc
+#ifdef Q_QDOC
 void qt_set_sequence_auto_mnemonic(bool b);
 #endif
 
@@ -71,6 +69,9 @@ class QKeySequencePrivate;
 
 class Q_GUI_EXPORT QKeySequence
 {
+    Q_GADGET
+    Q_ENUMS(StandardKey)
+
 public:
     enum StandardKey {
         UnknownKey,
@@ -138,7 +139,10 @@ public:
         InsertLineSeparator,
         SaveAs,
         Preferences,
-        Quit
+        Quit,
+        FullScreen,
+        Deselect,
+        DeleteCompleteLine
      };
 
     enum SequenceFormat {
@@ -147,36 +151,36 @@ public:
     };
 
     QKeySequence();
-    QKeySequence(const QString &key);
-    QKeySequence(const QString &key, SequenceFormat format);
+    QKeySequence(const QString &key, SequenceFormat format = NativeText);
     QKeySequence(int k1, int k2 = 0, int k3 = 0, int k4 = 0);
     QKeySequence(const QKeySequence &ks);
     QKeySequence(StandardKey key);
     ~QKeySequence();
 
-    uint count() const; // ### Qt 5: return 'int'
+    int count() const;
     bool isEmpty() const;
 
     enum SequenceMatch {
         NoMatch,
         PartialMatch,
         ExactMatch
-#ifdef QT3_SUPPORT
-        , Identical = ExactMatch
-#endif
     };
 
     QString toString(SequenceFormat format = PortableText) const;
     static QKeySequence fromString(const QString &str, SequenceFormat format = PortableText);
 
+    static QList<QKeySequence> listFromString(const QString &str, SequenceFormat format = PortableText);
+    static QString listToString(const QList<QKeySequence> &list, SequenceFormat format = PortableText);
+
     SequenceMatch matches(const QKeySequence &seq) const;
     static QKeySequence mnemonic(const QString &text);
     static QList<QKeySequence> keyBindings(StandardKey key);
 
-    // ### Qt 5: kill 'operator QString' - it's evil
-    operator QString() const;
+#if QT_DEPRECATED_SINCE(5, 0)
+    QT_DEPRECATED operator QString() const { return toString(QKeySequence::NativeText); }
+    QT_DEPRECATED operator int() const { if (1 <= count()) return operator [](0); return 0; }
+#endif
     operator QVariant() const;
-    operator int() const;
     int operator[](uint i) const;
     QKeySequence &operator=(const QKeySequence &other);
 #ifdef Q_COMPILER_RVALUE_REFS
@@ -207,7 +211,6 @@ private:
 
     friend Q_GUI_EXPORT QDataStream &operator<<(QDataStream &in, const QKeySequence &ks);
     friend Q_GUI_EXPORT QDataStream &operator>>(QDataStream &in, QKeySequence &ks);
-    friend class Q3AccelManager;
     friend class QShortcutMap;
     friend class QShortcut;
 
@@ -215,7 +218,7 @@ public:
     typedef QKeySequencePrivate * DataPtr;
     inline DataPtr &data_ptr() { return d; }
 };
-Q_DECLARE_TYPEINFO(QKeySequence, Q_MOVABLE_TYPE);
+
 Q_DECLARE_SHARED(QKeySequence)
 
 #ifndef QT_NO_DEBUG_STREAM
@@ -234,7 +237,5 @@ public:
 #endif // QT_NO_SHORTCUT
 
 QT_END_NAMESPACE
-
-QT_END_HEADER
 
 #endif // QKEYSEQUENCE_H

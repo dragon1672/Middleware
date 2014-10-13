@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -44,11 +44,12 @@
 
 #include <QtCore/qglobal.h>
 
-QT_BEGIN_HEADER
+#if defined(__OBJC__) && !defined(__cplusplus)
+#  warning "File built in Objective-C mode (.m), but using Qt requires Objective-C++ (.mm)"
+#endif
 
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
 
 #ifndef Q_MOC_RUN
 namespace
@@ -61,14 +62,13 @@ Qt {
     Q_OBJECT
 #endif
 
-#if (defined(Q_MOC_RUN) || defined(QT_JAMBI_RUN))
+#if defined(Q_MOC_RUN)
     // NOTE: Generally, do not add Q_ENUMS if a corresponding Q_FLAGS exists.
     Q_ENUMS(ScrollBarPolicy FocusPolicy ContextMenuPolicy)
     Q_ENUMS(ArrowType ToolButtonStyle PenStyle PenCapStyle PenJoinStyle BrushStyle)
     Q_ENUMS(FillRule MaskMode BGMode ClipOperation SizeMode)
-    Q_ENUMS(BackgroundMode) // Qt3
-    Q_ENUMS(Axis Corner LayoutDirection SizeHint Orientation DropAction)
-    Q_FLAGS(Alignment Orientations DropActions)
+    Q_ENUMS(Axis Corner Edge LayoutDirection SizeHint Orientation DropAction)
+    Q_FLAGS(Alignment Orientations DropActions Edges)
     Q_FLAGS(DockWidgetAreas ToolBarAreas)
     Q_ENUMS(DockWidgetArea ToolBarArea)
     Q_ENUMS(TextFormat)
@@ -87,15 +87,21 @@ Qt {
     Q_FLAGS(MatchFlags)
     Q_FLAGS(KeyboardModifiers MouseButtons)
     Q_ENUMS(WindowType WindowState WindowModality WidgetAttribute ApplicationAttribute)
-    Q_ENUMS(InputMethodHint)
-    Q_FLAGS(WindowFlags WindowStates InputMethodHints)
+    Q_FLAGS(WindowFlags WindowStates)
+    Q_ENUMS(InputMethodHint InputMethodQuery)
+    Q_FLAGS(InputMethodHints InputMethodQueries)
+    Q_ENUMS(ScreenOrientation)
+    Q_FLAGS(ScreenOrientations)
     Q_ENUMS(ConnectionType)
+    Q_ENUMS(ApplicationState)
 #ifndef QT_NO_GESTURES
     Q_ENUMS(GestureState)
     Q_ENUMS(GestureType)
 #endif
     Q_ENUMS(CursorMoveStyle)
-#endif // (defined(Q_MOC_RUN) || defined(QT_JAMBI_RUN))
+    Q_ENUMS(TimerType)
+    Q_ENUMS(ScrollPhase)
+#endif // defined(Q_MOC_RUN)
 
 #if defined(Q_MOC_RUN)
 public:
@@ -138,6 +144,10 @@ public:
     Q_DECLARE_FLAGS(KeyboardModifiers, KeyboardModifier)
 
     //shorter names for shortcuts
+    // The use of all-caps identifiers has the potential for clashing with
+    // user-defined or third-party macros. More so when the identifiers are not
+    // "namespace"-prefixed. This is considered bad practice and is why
+    // KeypadModifier was not added to the Modifier enum.
     enum Modifier {
         META          = Qt::MetaModifier,
         SHIFT         = Qt::ShiftModifier,
@@ -151,25 +161,43 @@ public:
         NoButton         = 0x00000000,
         LeftButton       = 0x00000001,
         RightButton      = 0x00000002,
-        MidButton        = 0x00000004, // ### Qt 5: remove me
+        MidButton        = 0x00000004, // ### Qt 6: remove me
         MiddleButton     = MidButton,
-        XButton1         = 0x00000008,
-        XButton2         = 0x00000010,
-        MouseButtonMask  = 0x000000ff
+        BackButton       = 0x00000008,
+        XButton1         = BackButton,
+        ExtraButton1     = XButton1,
+        ForwardButton    = 0x00000010,
+        XButton2         = ForwardButton,
+        ExtraButton2     = ForwardButton,
+        TaskButton       = 0x00000020,
+        ExtraButton3     = TaskButton,
+        ExtraButton4     = 0x00000040,
+        ExtraButton5     = 0x00000080,
+        ExtraButton6     = 0x00000100,
+        ExtraButton7     = 0x00000200,
+        ExtraButton8     = 0x00000400,
+        ExtraButton9     = 0x00000800,
+        ExtraButton10    = 0x00001000,
+        ExtraButton11    = 0x00002000,
+        ExtraButton12    = 0x00004000,
+        ExtraButton13    = 0x00008000,
+        ExtraButton14    = 0x00010000,
+        ExtraButton15    = 0x00020000,
+        ExtraButton16    = 0x00040000,
+        ExtraButton17    = 0x00080000,
+        ExtraButton18    = 0x00100000,
+        ExtraButton19    = 0x00200000,
+        ExtraButton20    = 0x00400000,
+        ExtraButton21    = 0x00800000,
+        ExtraButton22    = 0x01000000,
+        ExtraButton23    = 0x02000000,
+        ExtraButton24    = 0x04000000,
+        AllButtons       = 0x07ffffff,
+        MaxMouseButton   = ExtraButton24,
+        // 4 high-order bits remain available for future use (0x08000000 through 0x40000000).
+        MouseButtonMask  = 0xffffffff
     };
     Q_DECLARE_FLAGS(MouseButtons, MouseButton)
-
-#ifdef QT3_SUPPORT
-    enum ButtonState_enum {
-        ShiftButton     = Qt::ShiftModifier,
-        ControlButton   = Qt::ControlModifier,
-        AltButton       = Qt::AltModifier,
-        MetaButton      = Qt::MetaModifier,
-        Keypad          = Qt::KeypadModifier,
-        KeyButtonMask   = Qt::KeyboardModifierMask
-    };
-    typedef int ButtonState;
-#endif
 
     enum Orientation {
         Horizontal = 0x1,
@@ -189,10 +217,6 @@ public:
     enum SortOrder {
         AscendingOrder,
         DescendingOrder
-#if defined(QT3_SUPPORT) && !defined(Q_MOC_RUN)
-        ,Ascending = AscendingOrder,
-        Descending = DescendingOrder
-#endif
     };
 
     enum TileRule {
@@ -203,7 +227,7 @@ public:
 
     // Text formatting flags for QPainter::drawText and QLabel.
     // The following two enums can be combined to one integer which
-    // is passed as 'flags' to drawText and qt_format_text.
+    // is passed as 'flags' to QPainter::drawText, QFontMetrics::boundingRect and qt_format_text.
 
     enum AlignmentFlag {
         AlignLeft = 0x0001,
@@ -218,12 +242,14 @@ public:
         AlignTop = 0x0020,
         AlignBottom = 0x0040,
         AlignVCenter = 0x0080,
-        AlignVertical_Mask = AlignTop | AlignBottom | AlignVCenter,
+        AlignBaseline = 0x0100,
+        // Note that 0x100 will clash with Qt::TextSingleLine = 0x100 due to what the comment above
+        // this enum declaration states. However, since Qt::AlignBaseline is only used by layouts,
+        // it doesn't make sense to pass Qt::AlignBaseline to QPainter::drawText(), so there
+        // shouldn't really be any ambiguity between the two overlapping enum values.
+        AlignVertical_Mask = AlignTop | AlignBottom | AlignVCenter | AlignBaseline,
 
         AlignCenter = AlignVCenter | AlignHCenter
-#if defined(QT3_SUPPORT) && !defined(Q_MOC_RUN)
-        , AlignAuto = AlignLeft
-#endif
     };
 
     Q_DECLARE_FLAGS(Alignment, AlignmentFlag)
@@ -241,24 +267,11 @@ public:
         TextJustificationForced = 0x10000,
         TextForceLeftToRight = 0x20000,
         TextForceRightToLeft = 0x40000,
+        // Ensures that the longest variant is always used when computing the
+        // size of a multi-variant string.
         TextLongestVariant = 0x80000,
         TextBypassShaping = 0x100000
-
-#if defined(QT3_SUPPORT) && !defined(Q_MOC_RUN)
-        ,SingleLine = TextSingleLine,
-        DontClip = TextDontClip,
-        ExpandTabs = TextExpandTabs,
-        ShowPrefix = TextShowMnemonic,
-        WordBreak = TextWordWrap,
-        BreakAnywhere = TextWrapAnywhere,
-        DontPrint = TextDontPrint,
-        IncludeTrailingSpaces = TextIncludeTrailingSpaces,
-        NoAccel = TextHideMnemonic
-#endif
     };
-#ifdef QT3_SUPPORT
-    typedef TextFlag TextFlags;
-#endif
 
     enum TextElideMode {
         ElideLeft,
@@ -267,23 +280,35 @@ public:
         ElideNone
     };
 
+    enum WhiteSpaceMode {
+        WhiteSpaceNormal,
+        WhiteSpacePre,
+        WhiteSpaceNoWrap,
+        WhiteSpaceModeUndefined = -1
+    };
+
+    enum HitTestAccuracy { ExactHit, FuzzyHit };
+
     enum WindowType {
         Widget = 0x00000000,
         Window = 0x00000001,
         Dialog = 0x00000002 | Window,
         Sheet = 0x00000004 | Window,
-        Drawer = 0x00000006 | Window,
+        Drawer = Sheet | Dialog,
         Popup = 0x00000008 | Window,
-        Tool = 0x0000000a | Window,
-        ToolTip = 0x0000000c | Window,
-        SplashScreen = 0x0000000e | Window,
+        Tool = Popup | Dialog,
+        ToolTip = Popup | Sheet,
+        SplashScreen = ToolTip | Dialog,
         Desktop = 0x00000010 | Window,
-        SubWindow =  0x00000012,
+        SubWindow = 0x00000012,
+        ForeignWindow = 0x00000020 | Window,
+        CoverWindow = 0x00000040 | Window,
 
         WindowType_Mask = 0x000000ff,
         MSWindowsFixedSizeDialogHint = 0x00000100,
         MSWindowsOwnDC = 0x00000200,
-        X11BypassWindowManagerHint = 0x00000400,
+        BypassWindowManagerHint = 0x00000400,
+        X11BypassWindowManagerHint = BypassWindowManagerHint,
         FramelessWindowHint = 0x00000800,
         WindowTitleHint = 0x00001000,
         WindowSystemMenuHint = 0x00002000,
@@ -293,13 +318,10 @@ public:
         WindowContextHelpButtonHint = 0x00010000,
         WindowShadeButtonHint = 0x00020000,
         WindowStaysOnTopHint = 0x00040000,
-        // reserved for Qt3Support:
-        // WMouseNoMask = 0x00080000,
-        // WDestructiveClose = 0x00100000,
-        // WStaticContents = 0x00200000,
-        // WGroupLeader = 0x00400000,
-        // WShowModal = 0x00800000,
-        // WNoMousePropagation = 0x01000000,
+        WindowTransparentForInput = 0x00080000,
+        WindowOverridesSystemGestures = 0x00100000,
+        WindowDoesNotAcceptFocus = 0x00200000,
+
         CustomizeWindowHint = 0x02000000,
         WindowStaysOnBottomHint = 0x04000000,
         WindowCloseButtonHint = 0x08000000,
@@ -307,58 +329,8 @@ public:
         BypassGraphicsProxyWidget = 0x20000000,
         WindowOkButtonHint = 0x00080000,
         WindowCancelButtonHint = 0x00100000,
-        WindowSoftkeysVisibleHint = 0x40000000,
-        WindowSoftkeysRespondHint = 0x80000000
-
-#ifdef QT3_SUPPORT
-        ,
-        WMouseNoMask = 0x00080000,
-        WDestructiveClose = 0x00100000,
-        WStaticContents = 0x00200000,
-        WGroupLeader = 0x00400000,
-        WShowModal = 0x00800000,
-        WNoMousePropagation = 0x01000000,
-
-        WType_TopLevel = Window,
-        WType_Dialog = Dialog,
-        WType_Popup = Popup,
-        WType_Desktop = Desktop,
-        WType_Mask = WindowType_Mask,
-
-        WStyle_Customize = 0,
-        WStyle_NormalBorder = 0,
-        WStyle_DialogBorder = MSWindowsFixedSizeDialogHint,
-        WStyle_NoBorder = FramelessWindowHint,
-        WStyle_Title = WindowTitleHint,
-        WStyle_SysMenu = WindowSystemMenuHint,
-        WStyle_Minimize = WindowMinimizeButtonHint,
-        WStyle_Maximize = WindowMaximizeButtonHint,
-        WStyle_MinMax = WStyle_Minimize | WStyle_Maximize,
-        WStyle_Tool = Tool,
-        WStyle_StaysOnTop = WindowStaysOnTopHint,
-        WStyle_ContextHelp = WindowContextHelpButtonHint,
-
-        // misc flags
-        WPaintDesktop = 0,
-        WPaintClever = 0,
-
-        WX11BypassWM            = X11BypassWindowManagerHint,
-        WWinOwnDC               = MSWindowsOwnDC,
-        WMacSheet               = Sheet,
-        WMacDrawer              = Drawer,
-
-        WStyle_Splash           = SplashScreen,
-
-        WNoAutoErase           = 0,
-        WRepaintNoErase        = 0,
-        WNorthWestGravity      = WStaticContents,
-        WType_Modal            = Dialog | WShowModal,
-        WStyle_Dialog          = Dialog,
-        WStyle_NoBorderEx      = FramelessWindowHint,
-        WResizeNoErase = 0,
-        WMacNoSheet = 0
-#endif
-
+        NoDropShadowWindowHint = 0x40000000,
+        WindowFullscreenButtonHint = 0x80000000
     };
 
     Q_DECLARE_FLAGS(WindowFlags, WindowType)
@@ -372,6 +344,25 @@ public:
     };
 
     Q_DECLARE_FLAGS(WindowStates, WindowState)
+
+    enum ApplicationState {
+        ApplicationSuspended    = 0x00000000,
+        ApplicationHidden       = 0x00000001,
+        ApplicationInactive     = 0x00000002,
+        ApplicationActive       = 0x00000004
+    };
+
+    Q_DECLARE_FLAGS(ApplicationStates, ApplicationState)
+
+    enum ScreenOrientation {
+        PrimaryOrientation           = 0x00000000,
+        PortraitOrientation          = 0x00000001,
+        LandscapeOrientation         = 0x00000002,
+        InvertedPortraitOrientation  = 0x00000004,
+        InvertedLandscapeOrientation = 0x00000008
+    };
+
+    Q_DECLARE_FLAGS(ScreenOrientations, ScreenOrientation)
 
     enum WidgetAttribute {
         WA_Disabled = 0,
@@ -387,7 +378,6 @@ public:
         WA_UpdatesDisabled = 10,
         WA_Mapped = 11,
         WA_MacNoClickThrough = 12, // Mac only
-        WA_PaintOutsidePaintEvent = 13,
         WA_InputMethodEnabled = 14,
         WA_WState_Visible = 15,
         WA_WState_Hidden = 16,
@@ -506,28 +496,8 @@ public:
         WA_WState_AcceptedTouchBeginEvent = 122,
         WA_TouchPadAcceptSingleTouchEvents = 123,
 
-        WA_MergeSoftkeys =  124,
-        WA_MergeSoftkeysRecursively =  125,
-
-#if 0 // these values are reserved for Maemo5 - do not re-use them
-        WA_Maemo5NonComposited = 126,
-        WA_Maemo5StackedWindow = 127,
-#endif
-
-        WA_LockPortraitOrientation = 128,
-        WA_LockLandscapeOrientation = 129,
-        WA_AutoOrientation = 130,
-
-#if 0 // these values are reserved for Maemo5 - do not re-use them
-        WA_Maemo5PortraitOrientation = WA_LockPortraitOrientation,
-        WA_Maemo5LandscapeOrientation = WA_LockLandscapeOrientation,
-        WA_Maemo5AutoOrientation = WA_AutoOrientation,
-        WA_Maemo5ShowProgressIndicator = 131,
-#endif
-
-        WA_X11DoNotAcceptFocus = 132,
-        WA_SymbianNoSystemRotation = 133,
-        WA_MacNoShadow = 134,
+        WA_X11DoNotAcceptFocus = 126,
+        WA_MacNoShadow = 127,
 
         // Add new attributes before this line
         WA_AttributeCount
@@ -543,10 +513,14 @@ public:
         AA_MacPluginApplication = 5,
         AA_DontUseNativeMenuBar = 6,
         AA_MacDontSwapCtrlAndMeta = 7,
-        AA_S60DontConstructApplicationPanes = 8,
-        AA_S60DisablePartialScreenInputMode = 9,
+        AA_Use96Dpi = 8,
         AA_X11InitThreads = 10,
-        AA_CaptureMultimediaKeys = 11,
+        AA_SynthesizeTouchForUnhandledMouseEvents = 11,
+        AA_SynthesizeMouseForUnhandledTouchEvents = 12,
+        AA_UseHighDpiPixmaps = 13,
+        AA_ForceRasterWidgets = 14,
+        AA_UseDesktopOpenGL = 15,
+        AA_UseOpenGLES = 16,
 
         // Add new attributes before this line
         AA_AttributeCount
@@ -590,36 +564,11 @@ public:
         OpaqueMode
     };
 
-#ifdef QT3_SUPPORT
-    enum PaintUnit {                                // paint unit
-        PixelUnit,
-        LoMetricUnit, // obsolete
-        HiMetricUnit, // obsolete
-        LoEnglishUnit, // obsolete
-        HiEnglishUnit, // obsolete
-        TwipsUnit // obsolete
-    };
-
-    enum GUIStyle {
-        MacStyle,
-        WindowsStyle,
-        Win3Style,
-        PMStyle,
-        MotifStyle
-    };
-#endif
-
     enum Key {
         Key_Escape = 0x01000000,                // misc keys
         Key_Tab = 0x01000001,
         Key_Backtab = 0x01000002,
-#if defined(QT3_SUPPORT) && !defined(Q_MOC_RUN)
-        Key_BackTab = Key_Backtab,
-#endif
         Key_Backspace = 0x01000003,
-#if defined(QT3_SUPPORT) && !defined(Q_MOC_RUN)
-        Key_BackSpace = Key_Backspace,
-#endif
         Key_Return = 0x01000004,
         Key_Enter = 0x01000005,
         Key_Insert = 0x01000006,
@@ -635,13 +584,7 @@ public:
         Key_Right = 0x01000014,
         Key_Down = 0x01000015,
         Key_PageUp = 0x01000016,
-#if defined(QT3_SUPPORT) && !defined(Q_MOC_RUN)
-        Key_Prior = Key_PageUp,
-#endif
         Key_PageDown = 0x01000017,
-#if defined(QT3_SUPPORT) && !defined(Q_MOC_RUN)
-        Key_Next = Key_PageDown,
-#endif
         Key_Shift = 0x01000020,                // modifiers
         Key_Control = 0x01000021,
         Key_Meta = 0x01000022,
@@ -827,41 +770,7 @@ public:
         Key_Yacute = 0x0dd,
         Key_THORN = 0x0de,
         Key_ssharp = 0x0df,
-#if defined(QT3_SUPPORT) && !defined(Q_MOC_RUN)
-        Key_agrave = Key_Agrave,
-        Key_aacute = Key_Aacute,
-        Key_acircumflex = Key_Acircumflex,
-        Key_atilde = Key_Atilde,
-        Key_adiaeresis = Key_Adiaeresis,
-        Key_aring = Key_Aring,
-        Key_ae = Key_AE,
-        Key_ccedilla = Key_Ccedilla,
-        Key_egrave = Key_Egrave,
-        Key_eacute = Key_Eacute,
-        Key_ecircumflex = Key_Ecircumflex,
-        Key_ediaeresis = Key_Ediaeresis,
-        Key_igrave = Key_Igrave,
-        Key_iacute = Key_Iacute,
-        Key_icircumflex = Key_Icircumflex,
-        Key_idiaeresis = Key_Idiaeresis,
-        Key_eth = Key_ETH,
-        Key_ntilde = Key_Ntilde,
-        Key_ograve = Key_Ograve,
-        Key_oacute = Key_Oacute,
-        Key_ocircumflex = Key_Ocircumflex,
-        Key_otilde = Key_Otilde,
-        Key_odiaeresis = Key_Odiaeresis,
-#endif
         Key_division = 0x0f7,
-#if defined(QT3_SUPPORT) && !defined(Q_MOC_RUN)
-        Key_oslash = Key_Ooblique,
-        Key_ugrave = Key_Ugrave,
-        Key_uacute = Key_Uacute,
-        Key_ucircumflex = Key_Ucircumflex,
-        Key_udiaeresis = Key_Udiaeresis,
-        Key_yacute = Key_Yacute,
-        Key_thorn = Key_THORN,
-#endif
         Key_ydiaeresis = 0x0ff,
 
         // International input method support (X keycode - 0xEE00, the
@@ -961,9 +870,6 @@ public:
         Key_MediaPlay  = 0x01000080,
         Key_MediaStop  = 0x01000081,
         Key_MediaPrevious  = 0x01000082,
-#if defined(QT3_SUPPORT) && !defined(Q_MOC_RUN)
-        Key_MediaPrev  = Key_MediaPrevious,
-#endif
         Key_MediaNext  = 0x01000083,
         Key_MediaRecord = 0x01000084,
         Key_MediaPause = 0x1000085,
@@ -1010,7 +916,7 @@ public:
         Key_BrightnessAdjust = 0x010000c2,
         Key_Finance = 0x010000c3,
         Key_Community = 0x010000c4,
-        Key_AudioRewind = 0x010000c5,
+        Key_AudioRewind = 0x010000c5, // Media rewind
         Key_BackForward = 0x010000c6,
         Key_ApplicationLeft = 0x010000c7,
         Key_ApplicationRight = 0x010000c8,
@@ -1022,7 +928,7 @@ public:
         Key_Close = 0x010000ce,
         Key_Copy = 0x010000cf,
         Key_Cut = 0x010000d0,
-        Key_Display = 0x010000d1,
+        Key_Display = 0x010000d1, // Output switch key
         Key_DOS = 0x010000d2,
         Key_Documents = 0x010000d3,
         Key_Excel = 0x010000d4,
@@ -1071,9 +977,9 @@ public:
         Key_Bluetooth = 0x010000ff,
         Key_WLAN = 0x01000100,
         Key_UWB = 0x01000101,
-        Key_AudioForward = 0x01000102,
-        Key_AudioRepeat = 0x01000103,
-        Key_AudioRandomPlay = 0x01000104,
+        Key_AudioForward = 0x01000102, // Media fast-forward
+        Key_AudioRepeat = 0x01000103, // Toggle repeat mode
+        Key_AudioRandomPlay = 0x01000104, // Toggle shuffle mode
         Key_Subtitle = 0x01000105,
         Key_AudioCycleTrack = 0x01000106,
         Key_Time = 0x01000107,
@@ -1086,6 +992,24 @@ public:
 
         Key_LaunchG  = 0x0100010e,
         Key_LaunchH  = 0x0100010f,
+
+        Key_TouchpadToggle = 0x01000110,
+        Key_TouchpadOn = 0x01000111,
+        Key_TouchpadOff = 0x01000112,
+
+        Key_MicMute = 0x01000113,
+
+        Key_Red = 0x01000114,
+        Key_Green = 0x01000115,
+        Key_Yellow = 0x01000116,
+        Key_Blue = 0x01000117,
+
+        Key_ChannelUp = 0x01000118,
+        Key_ChannelDown = 0x01000119,
+
+        Key_Guide    = 0x0100011a,
+        Key_Info     = 0x0100011b,
+        Key_Settings = 0x0100011c,
 
         Key_MediaLast = 0x0100ffff,
 
@@ -1104,6 +1028,7 @@ public:
         //Key_Jisho   = 0x01020007, // IME: Dictionary key
         //Key_Oyayubi_Left = 0x01020008, // IME: Left Oyayubi key
         //Key_Oyayubi_Right = 0x01020009, // IME: Right Oyayubi key
+        Key_Exit    = 0x0102000a,
 
         // Device keys
         Key_Context1 = 0x01100000,
@@ -1179,75 +1104,12 @@ public:
         RadialGradientPattern,
         ConicalGradientPattern,
         TexturePattern = 24
-#if defined(QT3_SUPPORT) && !defined(Q_MOC_RUN)
-        , CustomPattern = TexturePattern
-#endif
     };
 
     enum SizeMode {
         AbsoluteSize,
         RelativeSize
     };
-
-#if defined(QT3_SUPPORT)
-#if defined(Q_OS_MAC)
-#ifndef qdoc
-    typedef int MacintoshVersion;
-
-    enum
-#else
-    enum MacintoshVersion
-#endif
-    {
-        //Unknown
-        MV_Unknown  = 0x0000,
-
-        //Version numbers
-        MV_9        = QSysInfo::MV_9,
-        MV_10_DOT_0 = QSysInfo::MV_10_0,
-        MV_10_DOT_1 = QSysInfo::MV_10_1,
-        MV_10_DOT_2 = QSysInfo::MV_10_2,
-        MV_10_DOT_3 = QSysInfo::MV_10_3,
-        MV_10_DOT_4 = QSysInfo::MV_10_4,
-
-        //Code names
-        MV_CHEETAH = QSysInfo::MV_CHEETAH,
-        MV_PUMA = QSysInfo::MV_PUMA,
-        MV_JAGUAR = QSysInfo::MV_JAGUAR,
-        MV_PANTHER = QSysInfo::MV_PANTHER,
-        MV_TIGER = QSysInfo::MV_TIGER
-    };
-#endif // Q_OS_MAC
-
-#if defined(Q_OS_WIN) || defined(Q_OS_CYGWIN)
-#ifndef qdoc
-    typedef int WindowsVersion;
-
-    enum
-#else
-    enum WindowsVersion
-#endif
-    {
-        WV_32s = QSysInfo::WV_32s,
-        WV_95 = QSysInfo::WV_95,
-        WV_98 = QSysInfo::WV_98,
-        WV_Me = QSysInfo::WV_Me,
-        WV_DOS_based= QSysInfo::WV_DOS_based,
-
-        WV_NT = QSysInfo::WV_NT,
-        WV_2000 = QSysInfo::WV_2000,
-        WV_XP = QSysInfo::WV_XP,
-        WV_2003 = QSysInfo::WV_2003,
-        WV_NT_based = QSysInfo::WV_NT_based,
-
-        WV_CE = QSysInfo::WV_CE,
-        WV_CENET = QSysInfo::WV_CENET,
-        WV_CE_5 = QSysInfo::WV_CE_5,
-        WV_CE_6 = QSysInfo::WV_CE_6,
-        WV_CE_based = QSysInfo::WV_CE_based
-    };
-#endif // Q_OS_WIN
-#endif // QT3_SUPPORT
 
     enum UIEffect {
         UI_General,
@@ -1285,53 +1147,18 @@ public:
         LastCursor = DragLinkCursor,
         BitmapCursor = 24,
         CustomCursor = 25
-
-#if defined(QT3_SUPPORT) && !defined(Q_MOC_RUN)
-        ,
-        arrowCursor = ArrowCursor,
-        upArrowCursor = UpArrowCursor,
-        crossCursor = CrossCursor,
-        waitCursor = WaitCursor,
-        ibeamCursor = IBeamCursor,
-        sizeVerCursor = SizeVerCursor,
-        sizeHorCursor = SizeHorCursor,
-        sizeBDiagCursor = SizeBDiagCursor,
-        sizeFDiagCursor = SizeFDiagCursor,
-        sizeAllCursor = SizeAllCursor,
-        blankCursor = BlankCursor,
-        splitVCursor = SplitVCursor,
-        splitHCursor = SplitHCursor,
-        pointingHandCursor = PointingHandCursor,
-        forbiddenCursor = ForbiddenCursor,
-        whatsThisCursor = WhatsThisCursor
-#endif
     };
 
     enum TextFormat {
         PlainText,
         RichText,
-        AutoText,
-        LogText
+        AutoText
     };
 
     enum AspectRatioMode {
         IgnoreAspectRatio,
         KeepAspectRatio,
         KeepAspectRatioByExpanding
-#if defined(QT3_SUPPORT) && !defined(Q_MOC_RUN)
-        , ScaleFree = IgnoreAspectRatio,
-        ScaleMin = KeepAspectRatio,
-        ScaleMax = KeepAspectRatioByExpanding
-#endif
-    };
-#ifdef QT3_SUPPORT
-    typedef AspectRatioMode ScaleMode;
-#endif
-
-    // This is for Q3TextEdit only, actually.
-    enum AnchorAttribute {
-        AnchorName,
-        AnchorHref
     };
 
     enum DockWidgetArea {
@@ -1367,28 +1194,6 @@ public:
 
     Q_DECLARE_FLAGS(ToolBarAreas, ToolBarArea)
 
-#ifdef QT3_SUPPORT
-    enum Dock {
-        DockUnmanaged,
-        DockTornOff,
-        DockTop,
-        DockBottom,
-        DockRight,
-        DockLeft,
-        DockMinimized
-        ,
-        Unmanaged = DockUnmanaged,
-        TornOff = DockTornOff,
-        Top = DockTop,
-        Bottom = DockBottom,
-        Right = DockRight,
-        Left = DockLeft,
-        Minimized = DockMinimized
-    };
-    // compatibility
-    typedef Dock ToolBarDock;
-#endif
-
     enum DateFormat {
         TextDate,      // default Qt
         ISODate,       // ISO 8601
@@ -1398,13 +1203,15 @@ public:
         SystemLocaleShortDate,
         SystemLocaleLongDate,
         DefaultLocaleShortDate,
-        DefaultLocaleLongDate
+        DefaultLocaleLongDate,
+        RFC2822Date        // RFC 2822 (+ 850 and 1036 during parsing)
     };
 
     enum TimeSpec {
         LocalTime,
         UTC,
-        OffsetFromUTC
+        OffsetFromUTC,
+        TimeZone
     };
 
     enum DayOfWeek {
@@ -1423,31 +1230,6 @@ public:
         ScrollBarAlwaysOn
     };
 
-#ifdef QT3_SUPPORT
-    enum BackgroundMode {
-        FixedColor,
-        FixedPixmap,
-        NoBackground,
-        PaletteForeground,
-        PaletteButton,
-        PaletteLight,
-        PaletteMidlight,
-        PaletteDark,
-        PaletteMid,
-        PaletteText,
-        PaletteBrightText,
-        PaletteBase,
-        PaletteBackground,
-        PaletteShadow,
-        PaletteHighlight,
-        PaletteHighlightedText,
-        PaletteButtonText,
-        PaletteLink,
-        PaletteLinkVisited,
-        X11ParentRelative
-    };
-#endif
-
     enum CaseSensitivity {
         CaseInsensitive,
         CaseSensitive
@@ -1458,19 +1240,21 @@ public:
         TopRightCorner = 0x00001,
         BottomLeftCorner = 0x00002,
         BottomRightCorner = 0x00003
-#if defined(QT3_SUPPORT) && !defined(Q_MOC_RUN)
-        ,TopLeft = TopLeftCorner,
-        TopRight = TopRightCorner,
-        BottomLeft = BottomLeftCorner,
-        BottomRight = BottomRightCorner
-#endif
     };
+
+    enum Edge {
+        TopEdge = 0x00001,
+        LeftEdge = 0x00002,
+        RightEdge = 0x00004,
+        BottomEdge = 0x00008
+    };
+
+    Q_DECLARE_FLAGS(Edges, Edge)
 
     enum ConnectionType {
         AutoConnection,
         DirectConnection,
         QueuedConnection,
-        AutoCompatConnection,
         BlockingQueuedConnection,
         UniqueConnection =  0x80
     };
@@ -1495,8 +1279,7 @@ public:
     enum ClipOperation {
         NoClip,
         ReplaceClip,
-        IntersectClip,
-        UniteClip
+        IntersectClip
     };
 
     // Shape = 0x1, BoundingRect = 0x2
@@ -1539,23 +1322,46 @@ public:
     };
 
     enum InputMethodQuery {
-        ImMicroFocus,
-        ImFont,
-        ImCursorPosition,
-        ImSurroundingText,
-        ImCurrentSelection,
-        ImMaximumTextLength,
-        ImAnchorPosition
+        ImEnabled = 0x1,
+        ImCursorRectangle = 0x2,
+        ImMicroFocus = 0x2, // deprecated
+        ImFont = 0x4,
+        ImCursorPosition = 0x8,
+        ImSurroundingText = 0x10,
+        ImCurrentSelection = 0x20,
+        ImMaximumTextLength = 0x40,
+        ImAnchorPosition = 0x80,
+        ImHints = 0x100,
+        ImPreferredLanguage = 0x200,
+
+        ImAbsolutePosition = 0x400,
+        ImTextBeforeCursor = 0x800,
+        ImTextAfterCursor = 0x1000,
+
+        ImPlatformData = 0x80000000,
+        ImQueryInput = ImCursorRectangle | ImCursorPosition | ImSurroundingText |
+                       ImCurrentSelection | ImAnchorPosition,
+        ImQueryAll = 0xffffffff
     };
+    Q_DECLARE_FLAGS(InputMethodQueries, InputMethodQuery)
 
     enum InputMethodHint {
         ImhNone = 0x0,
+
         ImhHiddenText = 0x1,
-        ImhNoAutoUppercase = 0x2,
-        ImhPreferNumbers = 0x4,
-        ImhPreferUppercase = 0x8,
-        ImhPreferLowercase = 0x10,
-        ImhNoPredictiveText = 0x20,
+        ImhSensitiveData = 0x2,
+        ImhNoAutoUppercase = 0x4,
+        ImhPreferNumbers = 0x8,
+        ImhPreferUppercase = 0x10,
+        ImhPreferLowercase = 0x20,
+        ImhNoPredictiveText = 0x40,
+
+        ImhDate = 0x80,
+        ImhTime = 0x100,
+
+        ImhPreferLatin = 0x200,
+
+        ImhMultiLine = 0x400,
 
         ImhDigitsOnly = 0x10000,
         ImhFormattedNumbersOnly = 0x20000,
@@ -1564,6 +1370,7 @@ public:
         ImhDialableCharactersOnly = 0x100000,
         ImhEmailCharactersOnly = 0x200000,
         ImhUrlCharactersOnly = 0x400000,
+        ImhLatinOnly = 0x800000,
 
         ImhExclusiveInputMask = 0xffff0000
     };
@@ -1592,7 +1399,11 @@ public:
         AnchorBottom
     };
 
-
+    enum FindChildOption {
+        FindDirectChildrenOnly = 0x0,
+        FindChildrenRecursively = 0x1
+    };
+    Q_DECLARE_FLAGS(FindChildOptions, FindChildOption)
 
     enum DropAction {
         CopyAction = 0x1,
@@ -1638,7 +1449,7 @@ public:
         StatusTipPropertyRole = 30,
         WhatsThisPropertyRole = 31,
         // Reserved
-        UserRole = 32
+        UserRole = 0x0100
     };
 
     enum ItemFlag {
@@ -1649,7 +1460,8 @@ public:
         ItemIsDropEnabled = 8,
         ItemIsUserCheckable = 16,
         ItemIsEnabled = 32,
-        ItemIsTristate = 64
+        ItemIsTristate = 64,
+        ItemNeverHasChildren = 128
     };
     Q_DECLARE_FLAGS(ItemFlags, ItemFlag)
 
@@ -1667,18 +1479,10 @@ public:
     };
     Q_DECLARE_FLAGS(MatchFlags, MatchFlag)
 
-#if defined(Q_WS_MAC)
     typedef void * HANDLE;
-#elif defined(Q_WS_WIN)
-    typedef void *HANDLE;
-#elif defined(Q_WS_X11)
-    typedef unsigned long HANDLE;
-#elif defined(Q_WS_QWS) || defined(Q_WS_QPA)
-    typedef void * HANDLE;
-#elif defined(Q_OS_SYMBIAN)
-    typedef unsigned long int HANDLE; // equivalent to TUint32
-#endif
+#if QT_DEPRECATED_SINCE(5, 0)
     typedef WindowFlags WFlags;
+#endif
 
     enum WindowModality {
         NonModal,
@@ -1739,10 +1543,7 @@ public:
         TouchPointPressed    = 0x01,
         TouchPointMoved      = 0x02,
         TouchPointStationary = 0x04,
-        TouchPointReleased   = 0x08,
-        TouchPointStateMask  = 0x0f,
-
-        TouchPointPrimary    = 0x10
+        TouchPointReleased   = 0x08
     };
     Q_DECLARE_FLAGS(TouchPointStates, TouchPointState)
 
@@ -1776,6 +1577,18 @@ public:
         IgnoredGesturesPropagateToParent = 0x04
     };
     Q_DECLARE_FLAGS(GestureFlags, GestureFlag)
+
+    enum NativeGestureType
+    {
+        BeginNativeGesture,
+        EndNativeGesture,
+        PanNativeGesture,
+        ZoomNativeGesture,
+        SmartZoomNativeGesture,
+        RotateNativeGesture,
+        SwipeNativeGesture
+    };
+
 #endif // QT_NO_GESTURES
 
     enum NavigationMode
@@ -1791,6 +1604,31 @@ public:
         LogicalMoveStyle,
         VisualMoveStyle
     };
+
+    enum TimerType {
+        PreciseTimer,
+        CoarseTimer,
+        VeryCoarseTimer
+    };
+
+    enum ScrollPhase {
+        ScrollBegin = 1,
+        ScrollUpdate,
+        ScrollEnd
+    };
+
+    enum MouseEventSource {
+        MouseEventNotSynthesized,
+        MouseEventSynthesizedBySystem,
+        MouseEventSynthesizedByQt
+    };
+
+    enum MouseEventFlag {
+        MouseEventCreatedDoubleClick = 0x01,
+        MouseEventFlagMask = 0xFF
+    };
+    Q_DECLARE_FLAGS(MouseEventFlags, MouseEventFlag)
+
 }
 #ifdef Q_MOC_RUN
  ;
@@ -1801,16 +1639,20 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::Orientations)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::KeyboardModifiers)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::WindowFlags)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::Alignment)
+Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::Edges)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::ImageConversionFlags)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::DockWidgetAreas)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::ToolBarAreas)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::WindowStates)
+Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::ScreenOrientations)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::DropActions)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::ItemFlags)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::MatchFlags)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::TextInteractionFlags)
+Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::InputMethodQueries)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::InputMethodHints)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::TouchPointStates)
+Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::MouseEventFlags)
 #ifndef QT_NO_GESTURES
 Q_DECLARE_OPERATORS_FOR_FLAGS(Qt::GestureFlags)
 #endif
@@ -1839,26 +1681,6 @@ public:
         RelayoutDropped
     };
 
-
-    enum Callback {
-        ConnectCallback,
-        DisconnectCallback,
-        AdoptCurrentThread,
-        EventNotifyCallback,
-        LastCallback
-    };
-
-    enum InternalFunction {
-        CreateThreadForAdoption,
-        RefAdoptedThread,
-        DerefAdoptedThread,
-        SetCurrentThreadToMainThread,
-        SetQObjectSender,
-        GetQObjectSender,
-        ResetQObjectSender,
-        LastInternalFunction
-    };
-
     enum DockPosition {
         LeftDock,
         RightDock,
@@ -1867,23 +1689,15 @@ public:
         DockCount
     };
 
+    enum Callback {
+        EventNotifyCallback,
+        LastCallback
+    };
     static bool registerCallback(Callback, qInternalCallback);
     static bool unregisterCallback(Callback, qInternalCallback);
-
     static bool activateCallbacks(Callback, void **);
-    static bool callFunction(InternalFunction func, void **);
 };
-
-#ifdef QT3_SUPPORT
-typedef qint32 QCOORD;                                // coordinate type
-enum {
-    QCOORD_MAX =  2147483647,
-    QCOORD_MIN = -QCOORD_MAX - 1
-};
-#endif
 
 QT_END_NAMESPACE
-
-QT_END_HEADER
 
 #endif // QNAMESPACE_H

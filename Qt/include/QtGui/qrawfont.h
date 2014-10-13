@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtGui module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -53,11 +53,8 @@
 
 #if !defined(QT_NO_RAWFONT)
 
-QT_BEGIN_HEADER
-
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Gui)
 
 class QRawFontPrivate;
 class Q_GUI_EXPORT QRawFont
@@ -67,6 +64,13 @@ public:
         PixelAntialiasing,
         SubPixelAntialiasing
     };
+
+    enum LayoutFlag {
+        SeparateAdvances = 0,
+        KernedAdvances = 1,
+        UseDesignMetrics = 2
+    };
+    Q_DECLARE_FLAGS(LayoutFlags, LayoutFlag)
 
     QRawFont();
     QRawFont(const QString &fileName,
@@ -82,6 +86,8 @@ public:
 
     QRawFont &operator=(const QRawFont &other);
 
+    void swap(QRawFont &other) { qSwap(d, other.d); }
+
     bool operator==(const QRawFont &other) const;
     inline bool operator!=(const QRawFont &other) const
     { return !operator==(other); }
@@ -93,14 +99,17 @@ public:
     int weight() const;
 
     QVector<quint32> glyphIndexesForString(const QString &text) const;
-    QVector<QPointF> advancesForGlyphIndexes(const QVector<quint32> &glyphIndexes) const;
+    inline QVector<QPointF> advancesForGlyphIndexes(const QVector<quint32> &glyphIndexes) const;
+    inline QVector<QPointF> advancesForGlyphIndexes(const QVector<quint32> &glyphIndexes, LayoutFlags layoutFlags) const;
     bool glyphIndexesForChars(const QChar *chars, int numChars, quint32 *glyphIndexes, int *numGlyphs) const;
     bool advancesForGlyphIndexes(const quint32 *glyphIndexes, QPointF *advances, int numGlyphs) const;
+    bool advancesForGlyphIndexes(const quint32 *glyphIndexes, QPointF *advances, int numGlyphs, LayoutFlags layoutFlags) const;
 
     QImage alphaMapForGlyph(quint32 glyphIndex,
                             AntialiasingType antialiasingType = SubPixelAntialiasing,
                             const QTransform &transform = QTransform()) const;
     QPainterPath pathForGlyph(quint32 glyphIndex) const;
+    QRectF boundingRect(quint32 glyphIndex) const;
 
     void setPixelSize(qreal pixelSize);
     qreal pixelSize() const;
@@ -113,6 +122,8 @@ public:
     qreal xHeight() const;
     qreal averageCharWidth() const;
     qreal maxCharWidth() const;
+    qreal lineThickness() const;
+    qreal underlinePosition() const;
 
     qreal unitsPerEm() const;
 
@@ -124,7 +135,7 @@ public:
                       qreal pixelSize,
                       QFont::HintingPreference hintingPreference);
 
-    bool supportsCharacter(quint32 ucs4) const;
+    bool supportsCharacter(uint ucs4) const;
     bool supportsCharacter(QChar character) const;
     QList<QFontDatabase::WritingSystem> supportedWritingSystems() const;
 
@@ -135,12 +146,30 @@ public:
 
 private:
     friend class QRawFontPrivate;
+    friend class QTextLayout;
+    friend class QTextEngine;
+
     QExplicitlySharedDataPointer<QRawFontPrivate> d;
 };
 
-QT_END_NAMESPACE
+Q_DECLARE_SHARED(QRawFont)
 
-QT_END_HEADER
+Q_DECLARE_OPERATORS_FOR_FLAGS(QRawFont::LayoutFlags)
+
+inline QVector<QPointF> QRawFont::advancesForGlyphIndexes(const QVector<quint32> &glyphIndexes, QRawFont::LayoutFlags layoutFlags) const
+{
+    QVector<QPointF> advances(glyphIndexes.size());
+    if (advancesForGlyphIndexes(glyphIndexes.constData(), advances.data(), glyphIndexes.size(), layoutFlags))
+        return advances;
+    return QVector<QPointF>();
+}
+
+inline QVector<QPointF> QRawFont::advancesForGlyphIndexes(const QVector<quint32> &glyphIndexes) const
+{
+    return advancesForGlyphIndexes(glyphIndexes, QRawFont::SeparateAdvances);
+}
+
+QT_END_NAMESPACE
 
 #endif // QT_NO_RAWFONT
 

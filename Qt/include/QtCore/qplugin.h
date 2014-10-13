@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -44,12 +44,10 @@
 
 #include <QtCore/qobject.h>
 #include <QtCore/qpointer.h>
-
-QT_BEGIN_HEADER
+#include <QtCore/qjsonobject.h>
 
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
 
 #ifndef Q_EXTERN_C
 #  ifdef __cplusplus
@@ -60,15 +58,51 @@ QT_MODULE(Core)
 #endif
 
 typedef QObject *(*QtPluginInstanceFunction)();
+typedef const char *(*QtPluginMetaDataFunction)();
 
-void Q_CORE_EXPORT qRegisterStaticPluginInstanceFunction(QtPluginInstanceFunction function);
+struct Q_CORE_EXPORT QStaticPlugin
+{
+    // Note: This struct is initialized using an initializer list.
+    // As such, it cannot have any new constructors or variables.
+#ifndef Q_QDOC
+    QtPluginInstanceFunction instance;
+    QtPluginMetaDataFunction rawMetaData;
+#else
+    // Since qdoc gets confused by the use of function
+    // pointers, we add these dummes for it to parse instead:
+    QObject *instance();
+    const char *rawMetaData();
+#endif
+    QJsonObject metaData() const;
+};
+Q_DECLARE_TYPEINFO(QStaticPlugin, Q_PRIMITIVE_TYPE);
+
+void Q_CORE_EXPORT qRegisterStaticPluginFunction(QStaticPlugin staticPlugin);
+
+#if defined (Q_OF_ELF) && (defined (Q_CC_GNU) || defined(Q_CC_CLANG))
+#  define QT_PLUGIN_METADATA_SECTION \
+    __attribute__ ((section (".qtmetadata"))) __attribute__((used))
+#elif defined(Q_OS_MAC)
+// TODO: Implement section parsing on Mac
+#  define QT_PLUGIN_METADATA_SECTION \
+    __attribute__ ((section ("__TEXT,qtmetadata"))) __attribute__((used))
+#elif defined(Q_CC_MSVC)
+// TODO: Implement section parsing for MSVC
+#pragma section(".qtmetadata",read,shared)
+#  define QT_PLUGIN_METADATA_SECTION \
+    __declspec(allocate(".qtmetadata"))
+#else
+#  define QT_PLUGIN_VERIFICATION_SECTION
+#  define QT_PLUGIN_METADATA_SECTION
+#endif
+
 
 #define Q_IMPORT_PLUGIN(PLUGIN) \
-        extern QT_PREPEND_NAMESPACE(QObject) *qt_plugin_instance_##PLUGIN(); \
+        extern const QT_PREPEND_NAMESPACE(QStaticPlugin) qt_static_plugin_##PLUGIN(); \
         class Static##PLUGIN##PluginInstance{ \
         public: \
                 Static##PLUGIN##PluginInstance() { \
-                qRegisterStaticPluginInstanceFunction(qt_plugin_instance_##PLUGIN); \
+                    qRegisterStaticPluginFunction(qt_static_plugin_##PLUGIN()); \
                 } \
         }; \
        static Static##PLUGIN##PluginInstance static##PLUGIN##Instance;
@@ -81,72 +115,38 @@ void Q_CORE_EXPORT qRegisterStaticPluginInstanceFunction(QtPluginInstanceFunctio
             return _instance; \
         }
 
-#  define Q_EXPORT_PLUGIN(PLUGIN) \
-            Q_EXPORT_PLUGIN2(PLUGIN, PLUGIN)
-
-#  define Q_EXPORT_STATIC_PLUGIN(PLUGIN) \
-            Q_EXPORT_STATIC_PLUGIN2(PLUGIN, PLUGIN)
-
 #if defined(QT_STATICPLUGIN)
 
-#  define Q_EXPORT_PLUGIN2(PLUGIN, PLUGINCLASS) \
-            QT_PREPEND_NAMESPACE(QObject) \
-                *qt_plugin_instance_##PLUGIN() \
-            Q_PLUGIN_INSTANCE(PLUGINCLASS)
-
-#  define Q_EXPORT_STATIC_PLUGIN2(PLUGIN, PLUGINCLASS) \
-            Q_EXPORT_PLUGIN2(PLUGIN, PLUGINCLASS)
+#  define QT_MOC_EXPORT_PLUGIN(PLUGINCLASS, PLUGINCLASSNAME) \
+    static QT_PREPEND_NAMESPACE(QObject) *qt_plugin_instance_##PLUGINCLASSNAME() \
+    Q_PLUGIN_INSTANCE(PLUGINCLASS) \
+    static const char *qt_plugin_query_metadata_##PLUGINCLASSNAME() { return (const char *)qt_pluginMetaData; } \
+    const QT_PREPEND_NAMESPACE(QStaticPlugin) qt_static_plugin_##PLUGINCLASSNAME() { \
+        QT_PREPEND_NAMESPACE(QStaticPlugin) plugin = { qt_plugin_instance_##PLUGINCLASSNAME, qt_plugin_query_metadata_##PLUGINCLASSNAME}; \
+        return plugin; \
+    }
 
 #else
-// NOTE: if you change pattern, you MUST change the pattern in
-// qlibrary.cpp as well.  changing the pattern will break all
-// backwards compatibility as well (no old plugins will be loaded).
-// QT5: should probably remove the entire pattern thing and do the section
-//      trick for all platforms. for now, keep it and fallback to scan for it.
-#  ifdef QPLUGIN_DEBUG_STR
-#    undef QPLUGIN_DEBUG_STR
-#  endif
-#  ifdef QT_NO_DEBUG
-#    define QPLUGIN_DEBUG_STR "false"
-#    define QPLUGIN_SECTION_DEBUG_STR ""
-#  else
-#    define QPLUGIN_DEBUG_STR "true"
-#    define QPLUGIN_SECTION_DEBUG_STR ".debug"
-#  endif
-#  define Q_PLUGIN_VERIFICATION_DATA \
-    static const char qt_plugin_verification_data[] = \
-      "pattern=QT_PLUGIN_VERIFICATION_DATA\n" \
-      "version=" QT_VERSION_STR "\n" \
-      "debug=" QPLUGIN_DEBUG_STR "\n" \
-      "buildkey=" QT_BUILD_KEY;
 
-#  if defined (Q_OF_ELF) && defined (Q_CC_GNU)
-#  define Q_PLUGIN_VERIFICATION_SECTION \
-    __attribute__ ((section (".qtplugin"))) __attribute__((used))
-#  else
-#  define Q_PLUGIN_VERIFICATION_SECTION
-#  endif
-
-#  if defined (Q_OS_WIN32) && defined(Q_CC_BOR)
-#     define Q_STANDARD_CALL __stdcall
-#  else
-#     define Q_STANDARD_CALL
-#  endif
-
-#  define Q_EXPORT_PLUGIN2(PLUGIN, PLUGINCLASS)      \
-            Q_PLUGIN_VERIFICATION_SECTION Q_PLUGIN_VERIFICATION_DATA \
+#  define QT_MOC_EXPORT_PLUGIN(PLUGINCLASS, PLUGINCLASSNAME)      \
             Q_EXTERN_C Q_DECL_EXPORT \
-            const char * Q_STANDARD_CALL qt_plugin_query_verification_data() \
-            { return qt_plugin_verification_data; } \
-            Q_EXTERN_C Q_DECL_EXPORT QT_PREPEND_NAMESPACE(QObject) * Q_STANDARD_CALL qt_plugin_instance() \
+            const char *qt_plugin_query_metadata() \
+            { return (const char *)qt_pluginMetaData; } \
+            Q_EXTERN_C Q_DECL_EXPORT QT_PREPEND_NAMESPACE(QObject) *qt_plugin_instance() \
             Q_PLUGIN_INSTANCE(PLUGINCLASS)
-
-#  define Q_EXPORT_STATIC_PLUGIN2(PLUGIN, PLUGINCLASS)
 
 #endif
 
-QT_END_NAMESPACE
 
-QT_END_HEADER
+#define Q_EXPORT_PLUGIN(PLUGIN) \
+            Q_EXPORT_PLUGIN2(PLUGIN, PLUGIN)
+#  define Q_EXPORT_PLUGIN2(PLUGIN, PLUGINCLASS)      \
+    Q_STATIC_ASSERT_X(false, "Old plugin system used")
+
+#  define Q_EXPORT_STATIC_PLUGIN2(PLUGIN, PLUGINCLASS) \
+    Q_STATIC_ASSERT_X(false, "Old plugin system used")
+
+
+QT_END_NAMESPACE
 
 #endif // Q_PLUGIN_H

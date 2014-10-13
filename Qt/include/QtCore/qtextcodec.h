@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -45,11 +45,8 @@
 #include <QtCore/qstring.h>
 #include <QtCore/qlist.h>
 
-QT_BEGIN_HEADER
-
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
 
 #ifndef QT_NO_TEXTCODEC
 
@@ -73,11 +70,9 @@ public:
     static QTextCodec* codecForLocale();
     static void setCodecForLocale(QTextCodec *c);
 
-    static QTextCodec* codecForTr();
-    static void setCodecForTr(QTextCodec *c);
-
-    static QTextCodec* codecForCStrings();
-    static void setCodecForCStrings(QTextCodec *c);
+#if QT_DEPRECATED_SINCE(5, 0)
+    QT_DEPRECATED static QTextCodec *codecForTr() { return codecForMib(106); /* Utf8 */ }
+#endif
 
     static QTextCodec *codecForHtml(const QByteArray &ba);
     static QTextCodec *codecForHtml(const QByteArray &ba, QTextCodec *defaultCodec);
@@ -117,11 +112,8 @@ public:
     QByteArray fromUnicode(const QChar *in, int length, ConverterState *state = 0) const
         { return convertFromUnicode(in, length, state); }
 
-    // ### Qt 5: merge these functions.
-    QTextDecoder* makeDecoder() const;
-    QTextDecoder* makeDecoder(ConversionFlags flags) const;
-    QTextEncoder* makeEncoder() const;
-    QTextEncoder* makeEncoder(ConversionFlags flags) const;
+    QTextDecoder* makeDecoder(ConversionFlags flags = DefaultConversion) const;
+    QTextEncoder* makeEncoder(ConversionFlags flags = DefaultConversion) const;
 
     virtual QByteArray name() const = 0;
     virtual QList<QByteArray> aliases() const;
@@ -134,28 +126,10 @@ protected:
     QTextCodec();
     virtual ~QTextCodec();
 
-public:
-#ifdef QT3_SUPPORT
-    static QT3_SUPPORT QTextCodec* codecForContent(const char*, int) { return 0; }
-    static QT3_SUPPORT const char* locale();
-    static QT3_SUPPORT QTextCodec* codecForName(const char* hint, int) { return codecForName(QByteArray(hint)); }
-    QT3_SUPPORT QByteArray fromUnicode(const QString& uc, int& lenInOut) const;
-    QT3_SUPPORT QString toUnicode(const QByteArray&, int len) const;
-    QT3_SUPPORT QByteArray mimeName() const { return name(); }
-    static QT3_SUPPORT QTextCodec *codecForIndex(int i) { return codecForName(availableCodecs().value(i)); }
-#endif
-
 private:
-    friend class QTextCodecCleanup;
-    static QTextCodec *cftr;
-    static bool validCodecs();
+    friend struct QCoreGlobalData;
 };
 Q_DECLARE_OPERATORS_FOR_FLAGS(QTextCodec::ConversionFlags)
-
-        inline QTextCodec* QTextCodec::codecForTr() { return validCodecs() ? cftr : 0; }
-inline void QTextCodec::setCodecForTr(QTextCodec *c) { cftr = c; }
-inline QTextCodec* QTextCodec::codecForCStrings() { return validCodecs() ? QString::codecForCStrings : 0; }
-inline void QTextCodec::setCodecForCStrings(QTextCodec *c) { QString::codecForCStrings = c; }
 
 class Q_CORE_EXPORT QTextEncoder {
     Q_DISABLE_COPY(QTextEncoder)
@@ -165,9 +139,6 @@ public:
     ~QTextEncoder();
     QByteArray fromUnicode(const QString& str);
     QByteArray fromUnicode(const QChar *uc, int len);
-#ifdef QT3_SUPPORT
-    QT3_SUPPORT QByteArray fromUnicode(const QString& uc, int& lenInOut);
-#endif
     bool hasFailure() const;
 private:
     const QTextCodec *c;
@@ -192,7 +163,5 @@ private:
 #endif // QT_NO_TEXTCODEC
 
 QT_END_NAMESPACE
-
-QT_END_HEADER
 
 #endif // QTEXTCODEC_H

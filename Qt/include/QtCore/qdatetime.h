@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -46,11 +46,11 @@
 #include <QtCore/qnamespace.h>
 #include <QtCore/qsharedpointer.h>
 
-QT_BEGIN_HEADER
+#include <limits>
 
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
+class QTimeZone;
 
 class Q_CORE_EXPORT QDate
 {
@@ -60,11 +60,11 @@ public:
         StandaloneFormat
     };
 public:
-    QDate() { jd = 0; }
+    QDate() { jd = nullJd(); }
     QDate(int y, int m, int d);
 
-    bool isNull() const { return jd == 0; }
-    bool isValid() const;
+    bool isNull() const { return !isValid(); }
+    bool isValid() const { return jd >= minJd() && jd <= maxJd(); }
 
     int year() const;
     int month() const;
@@ -76,33 +76,28 @@ public:
     int weekNumber(int *yearNum = 0) const;
 
 #ifndef QT_NO_TEXTDATE
-#ifdef QT3_SUPPORT
-    static QT3_SUPPORT QString monthName(int month) { return shortMonthName(month); }
-    static QT3_SUPPORT QString dayName(int weekday) { return shortDayName(weekday); }
-#endif
-    // ### Qt 5: merge these functions.
-    static QString shortMonthName(int month);
-    static QString shortMonthName(int month, MonthNameType type);
-    static QString shortDayName(int weekday);
-    static QString shortDayName(int weekday, MonthNameType type);
-    static QString longMonthName(int month);
-    static QString longMonthName(int month, MonthNameType type);
-    static QString longDayName(int weekday);
-    static QString longDayName(int weekday, MonthNameType type);
+    static QString shortMonthName(int month, MonthNameType type = DateFormat);
+    static QString shortDayName(int weekday, MonthNameType type = DateFormat);
+    static QString longMonthName(int month, MonthNameType type = DateFormat);
+    static QString longDayName(int weekday, MonthNameType type = DateFormat);
 #endif // QT_NO_TEXTDATE
 #ifndef QT_NO_DATESTRING
     QString toString(Qt::DateFormat f = Qt::TextDate) const;
     QString toString(const QString &format) const;
 #endif
-    bool setYMD(int y, int m, int d);
+#if QT_DEPRECATED_SINCE(5,0)
+QT_DEPRECATED inline bool setYMD(int y, int m, int d)
+{ if (uint(y) <= 99) y += 1900; return setDate(y, m, d); }
+#endif
+
     bool setDate(int year, int month, int day);
 
     void getDate(int *year, int *month, int *day);
 
-    QDate addDays(int days) const;
+    QDate addDays(qint64 days) const;
     QDate addMonths(int months) const;
     QDate addYears(int years) const;
-    int daysTo(const QDate &) const;
+    qint64 daysTo(const QDate &) const;
 
     bool operator==(const QDate &other) const { return jd == other.jd; }
     bool operator!=(const QDate &other) const { return jd != other.jd; }
@@ -118,23 +113,17 @@ public:
 #endif
     static bool isValid(int y, int m, int d);
     static bool isLeapYear(int year);
-#ifdef QT3_SUPPORT
-    inline static QT3_SUPPORT bool leapYear(int year) { return isLeapYear(year); }
-#endif
 
-    // ### Qt 5: remove these two functions
-    static uint gregorianToJulian(int y, int m, int d);
-    static void julianToGregorian(uint jd, int &y, int &m, int &d);
-
-#ifdef QT3_SUPPORT
-    static QT3_SUPPORT QDate currentDate(Qt::TimeSpec spec);
-#endif
-
-    static inline QDate fromJulianDay(int jd) { QDate d; d.jd = jd; return d; }
-    inline int toJulianDay() const { return jd; }
+    static inline QDate fromJulianDay(qint64 jd)
+    { QDate d; if (jd >= minJd() && jd <= maxJd()) d.jd = jd; return d; }
+    inline qint64 toJulianDay() const { return jd; }
 
 private:
-    uint jd;
+    static inline qint64 nullJd() { return std::numeric_limits<qint64>::min(); }
+    static inline qint64 minJd() { return Q_INT64_C(-784350574879); }
+    static inline qint64 maxJd() { return Q_INT64_C( 784354017364); }
+
+    qint64 jd;
 
     friend class QDateTime;
     friend class QDateTimePrivate;
@@ -180,16 +169,15 @@ public:
     bool operator>(const QTime &other) const { return mds > other.mds; }
     bool operator>=(const QTime &other) const { return mds >= other.mds; }
 
+    static inline QTime fromMSecsSinceStartOfDay(int msecs) { QTime t; t.mds = msecs; return t; }
+    inline int msecsSinceStartOfDay() const { return mds == NullTime ? 0 : mds; }
+
     static QTime currentTime();
 #ifndef QT_NO_DATESTRING
     static QTime fromString(const QString &s, Qt::DateFormat f = Qt::TextDate);
     static QTime fromString(const QString &s, const QString &format);
 #endif
     static bool isValid(int h, int m, int s, int ms = 0);
-
-#ifdef QT3_SUPPORT
-    static QT3_SUPPORT QTime currentTime(Qt::TimeSpec spec);
-#endif
 
     void start();
     int restart();
@@ -219,10 +207,17 @@ public:
     QDateTime();
     explicit QDateTime(const QDate &);
     QDateTime(const QDate &, const QTime &, Qt::TimeSpec spec = Qt::LocalTime);
+    // ### Qt 6: Merge with above with default offsetSeconds = 0
+    QDateTime(const QDate &date, const QTime &time, Qt::TimeSpec spec, int offsetSeconds);
+#ifndef QT_BOOTSTRAPPED
+    QDateTime(const QDate &date, const QTime &time, const QTimeZone &timeZone);
+#endif // QT_BOOTSTRAPPED
     QDateTime(const QDateTime &other);
     ~QDateTime();
 
     QDateTime &operator=(const QDateTime &other);
+
+    inline void swap(QDateTime &other) { qSwap(d, other.d); }
 
     bool isNull() const;
     bool isValid() const;
@@ -230,27 +225,48 @@ public:
     QDate date() const;
     QTime time() const;
     Qt::TimeSpec timeSpec() const;
+    int offsetFromUtc() const;
+#ifndef QT_BOOTSTRAPPED
+    QTimeZone timeZone() const;
+#endif // QT_BOOTSTRAPPED
+    QString timeZoneAbbreviation() const;
+    bool isDaylightTime() const;
+
     qint64 toMSecsSinceEpoch() const;
+    // ### Qt 6: use quint64 instead of uint
     uint toTime_t() const;
+
     void setDate(const QDate &date);
     void setTime(const QTime &time);
     void setTimeSpec(Qt::TimeSpec spec);
+    void setOffsetFromUtc(int offsetSeconds);
+#ifndef QT_BOOTSTRAPPED
+    void setTimeZone(const QTimeZone &toZone);
+#endif // QT_BOOTSTRAPPED
     void setMSecsSinceEpoch(qint64 msecs);
+    // ### Qt 6: use quint64 instead of uint
     void setTime_t(uint secsSince1Jan1970UTC);
+
 #ifndef QT_NO_DATESTRING
     QString toString(Qt::DateFormat f = Qt::TextDate) const;
     QString toString(const QString &format) const;
 #endif
-    QDateTime addDays(int days) const;
+    QDateTime addDays(qint64 days) const;
     QDateTime addMonths(int months) const;
     QDateTime addYears(int years) const;
-    QDateTime addSecs(int secs) const;
+    QDateTime addSecs(qint64 secs) const;
     QDateTime addMSecs(qint64 msecs) const;
+
     QDateTime toTimeSpec(Qt::TimeSpec spec) const;
     inline QDateTime toLocalTime() const { return toTimeSpec(Qt::LocalTime); }
     inline QDateTime toUTC() const { return toTimeSpec(Qt::UTC); }
-    int daysTo(const QDateTime &) const;
-    int secsTo(const QDateTime &) const;
+    QDateTime toOffsetFromUtc(int offsetSeconds) const;
+#ifndef QT_BOOTSTRAPPED
+    QDateTime toTimeZone(const QTimeZone &toZone) const;
+#endif // QT_BOOTSTRAPPED
+
+    qint64 daysTo(const QDateTime &) const;
+    qint64 secsTo(const QDateTime &) const;
     qint64 msecsTo(const QDateTime &) const;
 
     bool operator==(const QDateTime &other) const;
@@ -260,8 +276,10 @@ public:
     inline bool operator>(const QDateTime &other) const { return other < *this; }
     inline bool operator>=(const QDateTime &other) const { return !(*this < other); }
 
-    void setUtcOffset(int seconds);
-    int utcOffset() const;
+#if QT_DEPRECATED_SINCE(5, 2)
+    QT_DEPRECATED void setUtcOffset(int seconds);
+    QT_DEPRECATED int utcOffset() const;
+#endif // QT_DEPRECATED_SINCE
 
     static QDateTime currentDateTime();
     static QDateTime currentDateTimeUtc();
@@ -269,54 +287,41 @@ public:
     static QDateTime fromString(const QString &s, Qt::DateFormat f = Qt::TextDate);
     static QDateTime fromString(const QString &s, const QString &format);
 #endif
+    // ### Qt 6: use quint64 instead of uint
     static QDateTime fromTime_t(uint secsSince1Jan1970UTC);
-    static QDateTime fromMSecsSinceEpoch(qint64 msecs);
-    static qint64 currentMSecsSinceEpoch();
-
-#ifdef QT3_SUPPORT
-    inline QT3_SUPPORT void setTime_t(uint secsSince1Jan1970UTC, Qt::TimeSpec spec) {
-        setTime_t(secsSince1Jan1970UTC);
-        if (spec == Qt::UTC)
-            *this = toUTC();
-    }
-    static inline QT3_SUPPORT QDateTime currentDateTime(Qt::TimeSpec spec) {
-        if (spec == Qt::LocalTime)
-            return currentDateTime();
-        else
-            return currentDateTime().toUTC();
-    }
-    
+    // ### Qt 6: Merge with above with default spec = Qt::LocalTime
+    static QDateTime fromTime_t(uint secsSince1Jan1970UTC, Qt::TimeSpec spec,
+                                int offsetFromUtc = 0);
+#ifndef QT_BOOTSTRAPPED
+    static QDateTime fromTime_t(uint secsSince1Jan1970UTC, const QTimeZone &timeZone);
 #endif
+    static QDateTime fromMSecsSinceEpoch(qint64 msecs);
+    // ### Qt 6: Merge with above with default spec = Qt::LocalTime
+    static QDateTime fromMSecsSinceEpoch(qint64 msecs, Qt::TimeSpec spec, int offsetFromUtc = 0);
+#ifndef QT_BOOTSTRAPPED
+    static QDateTime fromMSecsSinceEpoch(qint64 msecs, const QTimeZone &timeZone);
+#endif
+    static qint64 currentMSecsSinceEpoch() Q_DECL_NOTHROW;
 
 private:
     friend class QDateTimePrivate;
     void detach();
+
+    // ### Qt6: Using a private here has high impact on runtime
+    // on users such as QFileInfo. In Qt 6, the data members
+    // should be inlined.
     QExplicitlySharedDataPointer<QDateTimePrivate> d;
 
 #ifndef QT_NO_DATASTREAM
     friend Q_CORE_EXPORT QDataStream &operator<<(QDataStream &, const QDateTime &);
     friend Q_CORE_EXPORT QDataStream &operator>>(QDataStream &, QDateTime &);
 #endif
-};
-Q_DECLARE_TYPEINFO(QDateTime, Q_MOVABLE_TYPE);
 
-#ifdef QT3_SUPPORT
-inline QDate QDate::currentDate(Qt::TimeSpec spec)
-{
-    if (spec == Qt::LocalTime)
-        return currentDate();
-    else
-        return QDateTime::currentDateTime().toUTC().date();
-}
-
-inline QTime QTime::currentTime(Qt::TimeSpec spec)
-{
-    if (spec == Qt::LocalTime)
-        return currentTime();
-    else
-        return QDateTime::currentDateTime().toUTC().time();
-}
+#if !defined(QT_NO_DEBUG_STREAM) && !defined(QT_NO_DATESTRING)
+    friend Q_CORE_EXPORT QDebug operator<<(QDebug, const QDateTime &);
 #endif
+};
+Q_DECLARE_SHARED(QDateTime)
 
 #ifndef QT_NO_DATASTREAM
 Q_CORE_EXPORT QDataStream &operator<<(QDataStream &, const QDate &);
@@ -333,8 +338,12 @@ Q_CORE_EXPORT QDebug operator<<(QDebug, const QTime &);
 Q_CORE_EXPORT QDebug operator<<(QDebug, const QDateTime &);
 #endif
 
-QT_END_NAMESPACE
+// QDateTime is not noexcept for now -- to be revised once
+// timezone and calendaring support is added
+Q_CORE_EXPORT uint qHash(const QDateTime &key, uint seed = 0);
+Q_CORE_EXPORT uint qHash(const QDate &key, uint seed = 0) Q_DECL_NOTHROW;
+Q_CORE_EXPORT uint qHash(const QTime &key, uint seed = 0) Q_DECL_NOTHROW;
 
-QT_END_HEADER
+QT_END_NAMESPACE
 
 #endif // QDATETIME_H

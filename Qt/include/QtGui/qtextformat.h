@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtGui module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -51,11 +51,8 @@
 #include <QtGui/qbrush.h>
 #include <QtGui/qtextoption.h>
 
-QT_BEGIN_HEADER
-
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Gui)
 
 class QString;
 class QVariant;
@@ -79,6 +76,10 @@ class QTextLength;
 #ifndef QT_NO_DATASTREAM
 Q_GUI_EXPORT QDataStream &operator<<(QDataStream &, const QTextLength &);
 Q_GUI_EXPORT QDataStream &operator>>(QDataStream &, QTextLength &);
+#endif
+
+#ifndef QT_NO_DEBUG_STREAM
+Q_GUI_EXPORT QDebug operator<<(QDebug, const QTextLength &);
 #endif
 
 class Q_GUI_EXPORT QTextLength
@@ -126,6 +127,10 @@ Q_GUI_EXPORT QDataStream &operator<<(QDataStream &, const QTextFormat &);
 Q_GUI_EXPORT QDataStream &operator>>(QDataStream &, QTextFormat &);
 #endif
 
+#ifndef QT_NO_DEBUG_STREAM
+Q_GUI_EXPORT QDebug operator<<(QDebug, const QTextFormat &);
+#endif
+
 class Q_GUI_EXPORT QTextFormat
 {
     Q_GADGET
@@ -136,7 +141,9 @@ public:
         BlockFormat = 1,
         CharFormat = 2,
         ListFormat = 3,
+#if QT_DEPRECATED_SINCE(5, 3)
         TableFormat = 4,
+#endif
         FrameFormat = 5,
 
         UserFormat = 100
@@ -172,8 +179,10 @@ public:
         // character properties
         FirstFontProperty = 0x1FE0,
         FontCapitalization = FirstFontProperty,
+        FontLetterSpacingType = 0x2033,
         FontLetterSpacing = 0x1FE1,
         FontWordSpacing = 0x1FE2,
+        FontStretch = 0x2034,
         FontStyleHint = 0x1FE3,
         FontStyleStrategy = 0x1FE4,
         FontKerning = 0x1FE5,
@@ -282,9 +291,13 @@ public:
     QTextFormat &operator=(const QTextFormat &rhs);
     ~QTextFormat();
 
+    void swap(QTextFormat &other)
+    { qSwap(d, other.d); qSwap(format_type, other.format_type); }
+
     void merge(const QTextFormat &other);
 
     inline bool isValid() const { return type() != InvalidFormat; }
+    inline bool isEmpty() const { return propertyCount() == 0; }
 
     int type() const;
 
@@ -364,6 +377,8 @@ private:
     friend Q_GUI_EXPORT QDataStream &operator>>(QDataStream &, QTextFormat &);
 };
 
+Q_DECLARE_SHARED(QTextFormat)
+
 inline void QTextFormat::setObjectType(int atype)
 { setProperty(ObjectType, atype); }
 
@@ -395,7 +410,13 @@ public:
     QTextCharFormat();
 
     bool isValid() const { return isCharFormat(); }
-    void setFont(const QFont &font);
+
+    enum FontPropertiesInheritanceBehavior {
+        FontPropertiesSpecifiedOnly,
+        FontPropertiesAll
+    };
+    void setFont(const QFont &font, FontPropertiesInheritanceBehavior behavior);
+    void setFont(const QFont &font); // ### Qt6: Merge with above
     QFont font() const;
 
     inline void setFontFamily(const QString &family)
@@ -420,6 +441,10 @@ public:
     { setProperty(FontCapitalization, capitalization); }
     inline QFont::Capitalization fontCapitalization() const
     { return static_cast<QFont::Capitalization>(intProperty(FontCapitalization)); }
+    inline void setFontLetterSpacingType(QFont::SpacingType letterSpacingType)
+    { setProperty(FontLetterSpacingType, letterSpacingType); }
+    inline QFont::SpacingType fontLetterSpacingType() const
+    { return static_cast<QFont::SpacingType>(intProperty(FontLetterSpacingType)); }
     inline void setFontLetterSpacing(qreal spacing)
     { setProperty(FontLetterSpacing, spacing); }
     inline qreal fontLetterSpacing() const
@@ -452,6 +477,11 @@ public:
     { setProperty(FontFixedPitch, fixedPitch); }
     inline bool fontFixedPitch() const
     { return boolProperty(FontFixedPitch); }
+
+    inline void setFontStretch(int factor)
+    { setProperty(FontStretch, factor); }
+    inline int fontStretch() const
+    { return intProperty(FontStretch); }
 
     inline void setFontStyleHint(QFont::StyleHint hint, QFont::StyleStrategy strategy = QFont::PreferDefault)
     { setProperty(FontStyleHint, hint); setProperty(FontStyleStrategy, strategy); }
@@ -525,6 +555,8 @@ protected:
     explicit QTextCharFormat(const QTextFormat &fmt);
     friend class QTextFormat;
 };
+
+Q_DECLARE_SHARED(QTextCharFormat)
 
 inline void QTextCharFormat::setTableCellRowSpan(int _tableCellRowSpan)
 {
@@ -616,6 +648,8 @@ protected:
     friend class QTextFormat;
 };
 
+Q_DECLARE_SHARED(QTextBlockFormat)
+
 inline void QTextBlockFormat::setAlignment(Qt::Alignment aalignment)
 { setProperty(BlockAlignment, int(aalignment)); }
 
@@ -679,6 +713,8 @@ protected:
     friend class QTextFormat;
 };
 
+Q_DECLARE_SHARED(QTextListFormat)
+
 inline void QTextListFormat::setStyle(Style astyle)
 { setProperty(ListStyle, astyle); }
 
@@ -714,6 +750,8 @@ protected:
     explicit QTextImageFormat(const QTextFormat &format);
     friend class QTextFormat;
 };
+
+Q_DECLARE_SHARED(QTextImageFormat)
 
 inline void QTextImageFormat::setName(const QString &aname)
 { setProperty(ImageName, aname); }
@@ -813,6 +851,8 @@ protected:
     friend class QTextFormat;
 };
 
+Q_DECLARE_SHARED(QTextFrameFormat)
+
 inline void QTextFrameFormat::setBorder(qreal aborder)
 { setProperty(FrameBorder, aborder); }
 
@@ -882,6 +922,8 @@ protected:
     friend class QTextFormat;
 };
 
+Q_DECLARE_SHARED(QTextTableFormat)
+
 inline void QTextTableFormat::setColumns(int acolumns)
 {
     if (acolumns == 1)
@@ -920,6 +962,8 @@ protected:
     explicit QTextTableCellFormat(const QTextFormat &fmt);
     friend class QTextFormat;
 };
+
+Q_DECLARE_SHARED(QTextTableCellFormat)
 
 inline void QTextTableCellFormat::setTopPadding(qreal padding)
 {
@@ -971,7 +1015,5 @@ inline void QTextTableCellFormat::setPadding(qreal padding)
 
 
 QT_END_NAMESPACE
-
-QT_END_HEADER
 
 #endif // QTEXTFORMAT_H

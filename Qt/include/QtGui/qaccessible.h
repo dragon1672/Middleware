@@ -1,47 +1,52 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtGui module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
 
+#include <QtCore/qglobal.h>
+
+#ifndef QT_NO_ACCESSIBILITY
 #ifndef QACCESSIBLE_H
 #define QACCESSIBLE_H
 
+#include <QtCore/qcoreapplication.h>
+#include <QtCore/qdebug.h>
 #include <QtCore/qglobal.h>
 #include <QtCore/qobject.h>
 #include <QtCore/qrect.h>
@@ -51,19 +56,22 @@
 #include <QtGui/qcolor.h>
 #include <QtGui/qevent.h>
 
-QT_BEGIN_HEADER
+#include <stdlib.h>
 
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Gui)
-
-#ifndef QT_NO_ACCESSIBILITY
-
 class QAccessibleInterface;
+class QAccessibleEvent;
+class QWindow;
+class QTextCursor;
 
+// We need to inherit QObject to expose the enums to QML.
 class Q_GUI_EXPORT QAccessible
 {
+    Q_GADGET
+    Q_ENUMS(Role Event)
 public:
+
     enum Event {
         SoundPlayed          = 0x0001,
         Alert                = 0x0002,
@@ -137,53 +145,84 @@ public:
         ParentChanged        = 0x800F,
         HelpChanged          = 0x80A0,
         DefaultActionChanged = 0x80B0,
-        AcceleratorChanged   = 0x80C0
+        AcceleratorChanged   = 0x80C0,
+
+        InvalidEvent
     };
 
-    enum StateFlag {
-        Normal          = 0x00000000,
-        Unavailable     = 0x00000001,
-        Selected        = 0x00000002,
-        Focused         = 0x00000004,
-        Pressed         = 0x00000008,
-        Checked         = 0x00000010,
-        Mixed           = 0x00000020,
-        ReadOnly        = 0x00000040,
-        HotTracked      = 0x00000080,
-        DefaultButton   = 0x00000100,
-        // #### Qt5 Expandable
-        Expanded        = 0x00000200,
-        Collapsed       = 0x00000400,
-        Busy            = 0x00000800,
-        // Floating        = 0x00001000,
-        Marqueed        = 0x00002000,
-        Animated        = 0x00004000,
-        Invisible       = 0x00008000,
-        Offscreen       = 0x00010000,
-        Sizeable        = 0x00020000,
-        Movable         = 0x00040000,
-#ifdef QT3_SUPPORT
-        Moveable        = Movable,
-#endif
-        SelfVoicing     = 0x00080000,
-        Focusable       = 0x00100000,
-        Selectable      = 0x00200000,
-        Linked          = 0x00400000,
-        Traversed       = 0x00800000,
-        MultiSelectable = 0x01000000,
-        ExtSelectable   = 0x02000000,
-        //AlertLow        = 0x04000000,
-        //AlertMedium     = 0x08000000,
-        //AlertHigh       = 0x10000000, /* reused for HasInvokeExtension */
-        Protected       = 0x20000000,
-        HasPopup        = 0x40000000,
-        Modal           = 0x80000000,
+    // 64 bit enums seem hard on some platforms (windows...)
+    // which makes using a bit field a sensible alternative
+    struct State {
+        // http://msdn.microsoft.com/en-us/library/ms697270.aspx
+        quint64 disabled : 1; // used to be Unavailable
+        quint64 selected : 1;
+        quint64 focusable : 1;
+        quint64 focused : 1;
+        quint64 pressed : 1;
+        quint64 checkable : 1;
+        quint64 checked : 1;
+        quint64 checkStateMixed : 1; // used to be Mixed
+        quint64 readOnly : 1;
+        quint64 hotTracked : 1;
+        quint64 defaultButton : 1;
+        quint64 expanded : 1;
+        quint64 collapsed : 1;
+        quint64 busy : 1;
+        quint64 expandable : 1;
+        quint64 marqueed : 1;
+        quint64 animated : 1;
+        quint64 invisible : 1;
+        quint64 offscreen : 1;
+        quint64 sizeable : 1;
+        quint64 movable : 1;
+        quint64 selfVoicing : 1;
+        quint64 selectable : 1;
+        quint64 linked : 1;
+        quint64 traversed : 1;
+        quint64 multiSelectable : 1;
+        quint64 extSelectable : 1;
+        quint64 passwordEdit : 1; // used to be Protected
+        quint64 hasPopup : 1;
+        quint64 modal : 1;
 
-        // #### Qt5 ManagesDescendants
-        // #### Qt5 remove HasInvokeExtension
-        HasInvokeExtension = 0x10000000 // internal
+        // IA2 - we chose to not add some IA2 states for now
+        // Below the ones that seem helpful
+        quint64 active : 1;
+        quint64 invalid : 1; // = defunct
+        quint64 editable : 1;
+        quint64 multiLine : 1;
+        quint64 selectableText : 1;
+        quint64 supportsAutoCompletion : 1;
+
+        // quint64 horizontal : 1;
+        // quint64 vertical : 1;
+        // quint64 invalidEntry : 1;
+        // quint64 managesDescendants : 1;
+        // quint64 singleLine : 1; // we have multi line, this is redundant.
+        // quint64 stale : 1;
+        // quint64 transient : 1;
+        // quint64 pinned : 1;
+
+        // Apple - see http://mattgemmell.com/2010/12/19/accessibility-for-iphone-and-ipad-apps/
+        // quint64 playsSound : 1;
+        // quint64 summaryElement : 1;
+        // quint64 updatesFrequently : 1;
+        // quint64 adjustable : 1;
+        // more and not included here: http://developer.apple.com/library/mac/#documentation/UserExperience/Reference/Accessibility_RoleAttribute_Ref/Attributes.html
+
+        // MSAA
+        // quint64 alertLow : 1;
+        // quint64 alertMedium : 1;
+        // quint64 alertHigh : 1;
+
+        State() {
+            memset(this, 0, sizeof(State));
+        }
     };
-    Q_DECLARE_FLAGS(State, StateFlag)
+
+
+
+
 
     enum Role {
         NoRole         = 0x00000000,
@@ -229,7 +268,10 @@ public:
         Graphic        = 0x00000028,
         StaticText     = 0x00000029,
         EditableText   = 0x0000002A,  // Editable, selectable, etc.
-        PushButton     = 0x0000002B,
+        Button         = 0x0000002B,
+#ifndef Q_QDOC
+        PushButton     = Button, // deprecated
+#endif
         CheckBox       = 0x0000002C,
         RadioButton    = 0x0000002D,
         ComboBox       = 0x0000002E,
@@ -242,15 +284,19 @@ public:
         Canvas         = 0x00000035,
         Animation      = 0x00000036,
         Equation       = 0x00000037,
-        ButtonDropDown = 0x00000038,
+        ButtonDropDown = 0x00000038, // The object represents a button that expands a grid.
         ButtonMenu     = 0x00000039,
         ButtonDropGrid = 0x0000003A,
-        Whitespace     = 0x0000003B,
+        Whitespace     = 0x0000003B, // The object represents blank space between other objects.
         PageTabList    = 0x0000003C,
         Clock          = 0x0000003D,
         Splitter       = 0x0000003E,
+        // Reserved space in case MSAA roles needs to be added
+
         // Additional Qt roles where enum value does not map directly to MSAA:
-        LayeredPane    = 0x0000003F,
+        LayeredPane    = 0x00000080,
+        Terminal       = 0x00000081,
+        Desktop        = 0x00000082,
         UserRole       = 0x0000ffff
     };
 
@@ -260,63 +306,44 @@ public:
         Value,
         Help,
         Accelerator,
+        DebugDescription,
         UserText     = 0x0000ffff
     };
 
     enum RelationFlag {
-        Unrelated     = 0x00000000,
-        Self          = 0x00000001,
-        Ancestor      = 0x00000002,
-        Child         = 0x00000004,
-        Descendent    = 0x00000008,
-        Sibling       = 0x00000010,
-        HierarchyMask = 0x000000ff,
-
-        Up            = 0x00000100,
-        Down          = 0x00000200,
-        Left          = 0x00000400,
-        Right         = 0x00000800,
-        Covers        = 0x00001000,
-        Covered       = 0x00002000,
-        GeometryMask  = 0x0000ff00,
-
-        FocusChild    = 0x00010000,
-        Label         = 0x00020000,
-        Labelled      = 0x00040000,
-        Controller    = 0x00080000,
-        Controlled    = 0x00100000,
-        LogicalMask   = 0x00ff0000
+        Label         = 0x00000001,
+        Labelled      = 0x00000002,
+        Controller    = 0x00000004,
+        Controlled    = 0x00000008,
+        AllRelations  = 0xffffffff
     };
     Q_DECLARE_FLAGS(Relation, RelationFlag)
 
-    enum Action {
-        DefaultAction       = 0,
-        Press               = -1,
-        FirstStandardAction = Press,
-        SetFocus            = -2,
-        Increase            = -3,
-        Decrease            = -4,
-        Accept              = -5,
-        Cancel	            = -6,
-        Select              = -7,
-        ClearSelection      = -8,
-        RemoveSelection     = -9,
-        ExtendSelection     = -10,
-        AddToSelection      = -11,
-        LastStandardAction  = AddToSelection
+    enum InterfaceType
+    {
+        TextInterface,
+        EditableTextInterface,
+        ValueInterface,
+        ActionInterface,
+        ImageInterface,
+        TableInterface,
+        TableCellInterface
     };
 
-    enum Method {
-        ListSupportedMethods      = 0,
-        SetCursorPosition         = 1,
-        GetCursorPosition         = 2,
-        ForegroundColor           = 3,
-        BackgroundColor           = 4
+    enum TextBoundaryType {
+        CharBoundary,
+        WordBoundary,
+        SentenceBoundary,
+        ParagraphBoundary,
+        LineBoundary,
+        NoBoundary
     };
 
     typedef QAccessibleInterface*(*InterfaceFactory)(const QString &key, QObject*);
-    typedef void(*UpdateHandler)(QObject*, int who, Event reason);
+    typedef void(*UpdateHandler)(QAccessibleEvent *event);
     typedef void(*RootObjectHandler)(QObject*);
+
+    typedef unsigned Id;
 
     static void installFactory(InterfaceFactory);
     static void removeFactory(InterfaceFactory);
@@ -324,149 +351,562 @@ public:
     static RootObjectHandler installRootObjectHandler(RootObjectHandler);
 
     static QAccessibleInterface *queryAccessibleInterface(QObject *);
-    static void updateAccessibility(QObject *, int who, Event reason);
-    static bool isActive();
-    static void setRootObject(QObject*);
+    static Id uniqueId(QAccessibleInterface *iface);
+    static QAccessibleInterface *accessibleInterface(Id uniqueId);
+    static Id registerAccessibleInterface(QAccessibleInterface *iface);
+    static void deleteAccessibleInterface(Id uniqueId);
 
-    static void initialize();
+
+#if QT_DEPRECATED_SINCE(5, 0)
+    QT_DEPRECATED static inline void updateAccessibility(QObject *object, int child, Event reason);
+#endif
+    static void updateAccessibility(QAccessibleEvent *event);
+
+    static bool isActive();
+    static void setRootObject(QObject *object);
+
     static void cleanup();
+
+    static QPair< int, int > qAccessibleTextBoundaryHelper(const QTextCursor &cursor, TextBoundaryType boundaryType);
 
 private:
     static UpdateHandler updateHandler;
     static RootObjectHandler rootObjectHandler;
+
+    QAccessible() {}
+
+    friend class QAccessibleCache;
 };
 
-Q_DECLARE_OPERATORS_FOR_FLAGS(QAccessible::State)
-Q_DECLARE_OPERATORS_FOR_FLAGS(QAccessible::Relation)
-QT_END_NAMESPACE
-Q_DECLARE_METATYPE(QSet<QAccessible::Method>)
-QT_BEGIN_NAMESPACE
+Q_GUI_EXPORT bool operator==(const QAccessible::State &first, const QAccessible::State &second);
 
-namespace QAccessible2
-{
-    enum InterfaceType
-    {
-        TextInterface,
-        EditableTextInterface,
-        ValueInterface,
-        TableInterface,
-        ActionInterface,
-        ImageInterface,
-        Table2Interface
-    };
-}
+Q_DECLARE_OPERATORS_FOR_FLAGS(QAccessible::Relation)
 
 class QAccessible2Interface;
 class QAccessibleTextInterface;
 class QAccessibleEditableTextInterface;
 class QAccessibleValueInterface;
-class QAccessibleTableInterface;
 class QAccessibleActionInterface;
 class QAccessibleImageInterface;
-class QAccessibleTable2Interface;
+class QAccessibleTableInterface;
+class QAccessibleTableCellInterface;
+class QAccessibleTableModelChangeEvent;
 
-class Q_GUI_EXPORT QAccessibleInterface : public QAccessible
+class Q_GUI_EXPORT QAccessibleInterface
 {
+protected:
+    virtual ~QAccessibleInterface();
+
 public:
-    virtual ~QAccessibleInterface() {}
     // check for valid pointers
     virtual bool isValid() const = 0;
     virtual QObject *object() const = 0;
+    virtual QWindow *window() const;
 
-    // hierarchy
+    // relations
+    virtual QVector<QPair<QAccessibleInterface*, QAccessible::Relation> > relations(QAccessible::Relation match = QAccessible::AllRelations) const;
+    virtual QAccessibleInterface *focusChild() const;
+
+    virtual QAccessibleInterface *childAt(int x, int y) const = 0;
+
+    // navigation, hierarchy
+    virtual QAccessibleInterface *parent() const = 0;
+    virtual QAccessibleInterface *child(int index) const = 0;
     virtual int childCount() const = 0;
     virtual int indexOfChild(const QAccessibleInterface *) const = 0;
 
-    // relations
-    virtual Relation relationTo(int child, const QAccessibleInterface *other,
-                                int otherChild) const = 0;
-    virtual int childAt(int x, int y) const = 0;
-
-    // navigation
-    virtual int navigate(RelationFlag relation, int index, QAccessibleInterface **iface) const = 0;
-
     // properties and state
-    virtual QString text(Text t, int child) const = 0;
-    virtual void setText(Text t, int child, const QString &text) = 0;
-    virtual QRect rect(int child) const = 0;
-    virtual Role role(int child) const = 0;
-    virtual State state(int child) const = 0;
+    virtual QString text(QAccessible::Text t) const = 0;
+    virtual void setText(QAccessible::Text t, const QString &text) = 0;
+    virtual QRect rect() const = 0;
+    virtual QAccessible::Role role() const = 0;
+    virtual QAccessible::State state() const = 0;
 
-    // action
-    virtual int userActionCount(int child) const = 0;
-    virtual QString actionText(int action, Text t, int child) const = 0;
-    virtual bool doAction(int action, int child, const QVariantList &params = QVariantList()) = 0;
-
-    QVariant invokeMethod(Method method, int child = 0,
-                          const QVariantList &params = QVariantList());
-
-    inline QSet<Method> supportedMethods()
-    { return qvariant_cast<QSet<Method> >(invokeMethod(ListSupportedMethods)); }
-
-    inline QColor foregroundColor()
-    { return qvariant_cast<QColor>(invokeMethod(ForegroundColor)); }
-
-    inline QColor backgroundColor()
-    { return qvariant_cast<QColor>(invokeMethod(BackgroundColor)); }
+    virtual QColor foregroundColor() const;
+    virtual QColor backgroundColor() const;
 
     inline QAccessibleTextInterface *textInterface()
-    { return reinterpret_cast<QAccessibleTextInterface *>(cast_helper(QAccessible2::TextInterface)); }
+    { return reinterpret_cast<QAccessibleTextInterface *>(interface_cast(QAccessible::TextInterface)); }
 
     inline QAccessibleEditableTextInterface *editableTextInterface()
-    { return reinterpret_cast<QAccessibleEditableTextInterface *>(cast_helper(QAccessible2::EditableTextInterface)); }
+    { return reinterpret_cast<QAccessibleEditableTextInterface *>(interface_cast(QAccessible::EditableTextInterface)); }
 
     inline QAccessibleValueInterface *valueInterface()
-    { return reinterpret_cast<QAccessibleValueInterface *>(cast_helper(QAccessible2::ValueInterface)); }
-
-    inline QAccessibleTableInterface *tableInterface()
-    { return reinterpret_cast<QAccessibleTableInterface *>(cast_helper(QAccessible2::TableInterface)); }
+    { return reinterpret_cast<QAccessibleValueInterface *>(interface_cast(QAccessible::ValueInterface)); }
 
     inline QAccessibleActionInterface *actionInterface()
-    { return reinterpret_cast<QAccessibleActionInterface *>(cast_helper(QAccessible2::ActionInterface)); }
+    { return reinterpret_cast<QAccessibleActionInterface *>(interface_cast(QAccessible::ActionInterface)); }
 
     inline QAccessibleImageInterface *imageInterface()
-    { return reinterpret_cast<QAccessibleImageInterface *>(cast_helper(QAccessible2::ImageInterface)); }
+    { return reinterpret_cast<QAccessibleImageInterface *>(interface_cast(QAccessible::ImageInterface)); }
 
-    inline QAccessibleTable2Interface *table2Interface()
-    { return reinterpret_cast<QAccessibleTable2Interface *>(cast_helper(QAccessible2::Table2Interface)); }
+    inline QAccessibleTableInterface *tableInterface()
+    { return reinterpret_cast<QAccessibleTableInterface *>(interface_cast(QAccessible::TableInterface)); }
 
-private:
-    QAccessible2Interface *cast_helper(QAccessible2::InterfaceType);
-};
+    inline QAccessibleTableCellInterface *tableCellInterface()
+    { return reinterpret_cast<QAccessibleTableCellInterface *>(interface_cast(QAccessible::TableCellInterface)); }
 
-class Q_GUI_EXPORT QAccessibleInterfaceEx: public QAccessibleInterface
-{
-public:
-    virtual QVariant invokeMethodEx(Method method, int child, const QVariantList &params) = 0;
-    virtual QVariant virtual_hook(const QVariant &data);
-    virtual QAccessible2Interface *interface_cast(QAccessible2::InterfaceType)
+    virtual void virtual_hook(int id, void *data);
+
+    virtual void *interface_cast(QAccessible::InterfaceType)
     { return 0; }
+
+protected:
+    friend class QAccessibleCache;
 };
 
-
-class Q_GUI_EXPORT QAccessibleEvent : public QEvent
+class Q_GUI_EXPORT QAccessibleTextInterface
 {
 public:
-    inline QAccessibleEvent(Type type, int child);
-    inline int child() const { return c; }
-    inline QString value() const { return val; }
-    inline void setValue(const QString &aText) { val = aText; }
+    virtual ~QAccessibleTextInterface() {}
+    // selection
+    virtual void selection(int selectionIndex, int *startOffset, int *endOffset) const = 0;
+    virtual int selectionCount() const = 0;
+    virtual void addSelection(int startOffset, int endOffset) = 0;
+    virtual void removeSelection(int selectionIndex) = 0;
+    virtual void setSelection(int selectionIndex, int startOffset, int endOffset) = 0;
 
-private:
-    int c;
-    QString val;
+    // cursor
+    virtual int cursorPosition() const = 0;
+    virtual void setCursorPosition(int position) = 0;
+
+    // text
+    virtual QString text(int startOffset, int endOffset) const = 0;
+    virtual QString textBeforeOffset(int offset, QAccessible::TextBoundaryType boundaryType,
+                                     int *startOffset, int *endOffset) const;
+    virtual QString textAfterOffset(int offset, QAccessible::TextBoundaryType boundaryType,
+                                    int *startOffset, int *endOffset) const;
+    virtual QString textAtOffset(int offset, QAccessible::TextBoundaryType boundaryType,
+                                 int *startOffset, int *endOffset) const;
+    virtual int characterCount() const = 0;
+
+    // character <-> geometry
+    virtual QRect characterRect(int offset) const = 0;
+    virtual int offsetAtPoint(const QPoint &point) const = 0;
+
+    virtual void scrollToSubstring(int startIndex, int endIndex) = 0;
+    virtual QString attributes(int offset, int *startOffset, int *endOffset) const = 0;
 };
 
-inline QAccessibleEvent::QAccessibleEvent(Type atype, int achild)
-    : QEvent(atype), c(achild) {}
+class Q_GUI_EXPORT QAccessibleEditableTextInterface
+{
+public:
+    virtual ~QAccessibleEditableTextInterface() {}
 
-#define QAccessibleInterface_iid "com.trolltech.Qt.QAccessibleInterface"
+    virtual void deleteText(int startOffset, int endOffset) = 0;
+    virtual void insertText(int offset, const QString &text) = 0;
+    virtual void replaceText(int startOffset, int endOffset, const QString &text) = 0;
+};
+
+class Q_GUI_EXPORT QAccessibleValueInterface
+{
+public:
+
+    virtual ~QAccessibleValueInterface() {}
+
+    virtual QVariant currentValue() const = 0;
+    virtual void setCurrentValue(const QVariant &value) = 0;
+    virtual QVariant maximumValue() const = 0;
+    virtual QVariant minimumValue() const = 0;
+    virtual QVariant minimumStepSize() const = 0;
+};
+
+class Q_GUI_EXPORT QAccessibleTableCellInterface
+{
+public:
+    virtual ~QAccessibleTableCellInterface() {}
+
+    virtual bool isSelected() const = 0;
+
+    virtual QList<QAccessibleInterface*> columnHeaderCells() const = 0;
+    virtual QList<QAccessibleInterface*> rowHeaderCells() const = 0;
+    virtual int columnIndex() const = 0;
+    virtual int rowIndex() const = 0;
+    virtual int columnExtent() const = 0;
+    virtual int rowExtent() const = 0;
+
+    virtual QAccessibleInterface* table() const = 0;
+};
+
+class Q_GUI_EXPORT QAccessibleTableInterface
+{
+public:
+    virtual ~QAccessibleTableInterface() {}
+
+    virtual QAccessibleInterface *caption() const = 0;
+    virtual QAccessibleInterface *summary() const = 0;
+
+    virtual QAccessibleInterface *cellAt (int row, int column) const = 0;
+    virtual int selectedCellCount() const = 0;
+    virtual QList<QAccessibleInterface*> selectedCells() const = 0;
+
+    virtual QString columnDescription(int column) const = 0;
+    virtual QString rowDescription(int row) const = 0;
+    virtual int selectedColumnCount() const = 0;
+    virtual int selectedRowCount() const = 0;
+    virtual int columnCount() const = 0;
+    virtual int rowCount() const = 0;
+    virtual QList<int> selectedColumns() const = 0;
+    virtual QList<int> selectedRows() const = 0;
+    virtual bool isColumnSelected(int column) const = 0;
+    virtual bool isRowSelected(int row) const = 0;
+    virtual bool selectRow(int row) = 0;
+    virtual bool selectColumn(int column) = 0;
+    virtual bool unselectRow(int row) = 0;
+    virtual bool unselectColumn(int column) = 0;
+
+    virtual void modelChange(QAccessibleTableModelChangeEvent *event) = 0;
+
+protected:
+friend class QAbstractItemView;
+friend class QAbstractItemViewPrivate;
+};
+
+class Q_GUI_EXPORT QAccessibleActionInterface
+{
+    Q_DECLARE_TR_FUNCTIONS(QAccessibleActionInterface)
+public:
+    virtual ~QAccessibleActionInterface() {}
+
+    virtual QStringList actionNames() const = 0;
+    virtual QString localizedActionName(const QString &name) const;
+    virtual QString localizedActionDescription(const QString &name) const;
+    virtual void doAction(const QString &actionName) = 0;
+    virtual QStringList keyBindingsForAction(const QString &actionName) const = 0;
+
+    static const QString &pressAction();
+    static const QString &increaseAction();
+    static const QString &decreaseAction();
+    static const QString &showMenuAction();
+    static const QString &setFocusAction();
+    static const QString &toggleAction();
+};
+
+class Q_GUI_EXPORT QAccessibleImageInterface
+{
+public:
+    virtual ~QAccessibleImageInterface() {}
+
+    virtual QString imageDescription() const = 0;
+    virtual QSize imageSize() const = 0;
+    virtual QPoint imagePosition() const = 0;
+};
+
+
+class Q_GUI_EXPORT QAccessibleEvent
+{
+    Q_DISABLE_COPY(QAccessibleEvent)
+public:
+
+    inline QAccessibleEvent(QObject *obj, QAccessible::Event typ)
+        : m_type(typ), m_object(obj), m_child(-1)
+    {
+        Q_ASSERT(obj);
+        // All events below have a subclass of QAccessibleEvent.
+        // Use the subclass, since it's expected that it's possible to cast to that.
+        Q_ASSERT(m_type != QAccessible::ValueChanged);
+        Q_ASSERT(m_type != QAccessible::StateChanged);
+        Q_ASSERT(m_type != QAccessible::TextCaretMoved);
+        Q_ASSERT(m_type != QAccessible::TextSelectionChanged);
+        Q_ASSERT(m_type != QAccessible::TextInserted);
+        Q_ASSERT(m_type != QAccessible::TextRemoved);
+        Q_ASSERT(m_type != QAccessible::TextUpdated);
+        Q_ASSERT(m_type != QAccessible::TableModelChanged);
+    }
+
+    inline QAccessibleEvent(QAccessibleInterface *iface, QAccessible::Event typ)
+        : m_type(typ), m_object(0)
+    {
+        Q_ASSERT(iface);
+        Q_ASSERT(m_type != QAccessible::ValueChanged);
+        Q_ASSERT(m_type != QAccessible::StateChanged);
+        Q_ASSERT(m_type != QAccessible::TextCaretMoved);
+        Q_ASSERT(m_type != QAccessible::TextSelectionChanged);
+        Q_ASSERT(m_type != QAccessible::TextInserted);
+        Q_ASSERT(m_type != QAccessible::TextRemoved);
+        Q_ASSERT(m_type != QAccessible::TextUpdated);
+        Q_ASSERT(m_type != QAccessible::TableModelChanged);
+        m_uniqueId = QAccessible::uniqueId(iface);
+    }
+
+    virtual ~QAccessibleEvent()
+    {}
+
+    QAccessible::Event type() const { return m_type; }
+    QObject *object() const { return m_object; }
+    QAccessible::Id uniqueId() const;
+
+    void setChild(int chld) { m_child = chld; }
+    int child() const { return m_child; }
+
+    virtual QAccessibleInterface *accessibleInterface() const;
+
+protected:
+    QAccessible::Event m_type;
+    QObject *m_object;
+    union {
+        int m_child;
+        QAccessible::Id m_uniqueId;
+    };
+
+};
+
+class Q_GUI_EXPORT QAccessibleStateChangeEvent :public QAccessibleEvent
+{
+public:
+    inline QAccessibleStateChangeEvent(QObject *obj, QAccessible::State state)
+        : QAccessibleEvent(obj, QAccessible::InvalidEvent), m_changedStates(state)
+    {
+        m_type = QAccessible::StateChanged;
+    }
+    inline QAccessibleStateChangeEvent(QAccessibleInterface *iface, QAccessible::State state)
+        : QAccessibleEvent(iface, QAccessible::InvalidEvent), m_changedStates(state)
+    {
+        m_type = QAccessible::StateChanged;
+    }
+
+    QAccessible::State changedStates() const {
+        return m_changedStates;
+    }
+
+protected:
+    QAccessible::State m_changedStates;
+};
+
+// Update the cursor and optionally the selection.
+class Q_GUI_EXPORT QAccessibleTextCursorEvent : public QAccessibleEvent
+{
+public:
+    inline QAccessibleTextCursorEvent(QObject *obj, int cursorPos)
+        : QAccessibleEvent(obj, QAccessible::InvalidEvent)
+      , m_cursorPosition(cursorPos)
+    {
+        m_type = QAccessible::TextCaretMoved;
+    }
+    inline QAccessibleTextCursorEvent(QAccessibleInterface *iface, int cursorPos)
+        : QAccessibleEvent(iface, QAccessible::InvalidEvent)
+      , m_cursorPosition(cursorPos)
+    {
+        m_type = QAccessible::TextCaretMoved;
+    }
+
+    void setCursorPosition(int position) { m_cursorPosition = position; }
+    int cursorPosition() const { return m_cursorPosition; }
+
+protected:
+    int m_cursorPosition;
+};
+
+// Updates the cursor position simultaneously. By default the cursor is set to the end of the selection.
+class Q_GUI_EXPORT QAccessibleTextSelectionEvent : public QAccessibleTextCursorEvent
+{
+public:
+    inline QAccessibleTextSelectionEvent(QObject *obj, int start, int end)
+        : QAccessibleTextCursorEvent(obj, (start == -1) ? 0 : end)
+        , m_selectionStart(start), m_selectionEnd(end)
+    {
+        m_type = QAccessible::TextSelectionChanged;
+    }
+    inline QAccessibleTextSelectionEvent(QAccessibleInterface *iface, int start, int end)
+        : QAccessibleTextCursorEvent(iface, (start == -1) ? 0 : end)
+        , m_selectionStart(start), m_selectionEnd(end)
+    {
+        m_type = QAccessible::TextSelectionChanged;
+    }
+
+    void setSelection(int start, int end) {
+        m_selectionStart = start;
+        m_selectionEnd = end;
+    }
+
+    int selectionStart() const { return m_selectionStart; }
+    int selectionEnd() const { return m_selectionEnd; }
+
+protected:
+        int m_selectionStart;
+        int m_selectionEnd;
+};
+
+class Q_GUI_EXPORT QAccessibleTextInsertEvent : public QAccessibleTextCursorEvent
+{
+public:
+    inline QAccessibleTextInsertEvent(QObject *obj, int position, const QString &text)
+        : QAccessibleTextCursorEvent(obj, position + text.length())
+        , m_position(position), m_text(text)
+    {
+        m_type = QAccessible::TextInserted;
+    }
+    inline QAccessibleTextInsertEvent(QAccessibleInterface *iface, int position, const QString &text)
+        : QAccessibleTextCursorEvent(iface, position + text.length())
+        , m_position(position), m_text(text)
+    {
+        m_type = QAccessible::TextInserted;
+    }
+
+    QString textInserted() const {
+        return m_text;
+    }
+    int changePosition() const {
+        return m_position;
+    }
+
+protected:
+    int m_position;
+    QString m_text;
+};
+
+class Q_GUI_EXPORT QAccessibleTextRemoveEvent : public QAccessibleTextCursorEvent
+{
+public:
+    inline QAccessibleTextRemoveEvent(QObject *obj, int position, const QString &text)
+        : QAccessibleTextCursorEvent(obj, position)
+        , m_position(position), m_text(text)
+    {
+        m_type = QAccessible::TextRemoved;
+    }
+    inline QAccessibleTextRemoveEvent(QAccessibleInterface *iface, int position, const QString &text)
+        : QAccessibleTextCursorEvent(iface, position)
+        , m_position(position), m_text(text)
+    {
+        m_type = QAccessible::TextRemoved;
+    }
+
+    QString textRemoved() const {
+        return m_text;
+    }
+    int changePosition() const {
+        return m_position;
+    }
+
+protected:
+    int m_position;
+    QString m_text;
+};
+
+class Q_GUI_EXPORT QAccessibleTextUpdateEvent : public QAccessibleTextCursorEvent
+{
+public:
+    inline QAccessibleTextUpdateEvent(QObject *obj, int position, const QString &oldText, const QString &text)
+        : QAccessibleTextCursorEvent(obj, position + text.length())
+        , m_position(position), m_oldText(oldText), m_text(text)
+    {
+        m_type = QAccessible::TextUpdated;
+    }
+    inline QAccessibleTextUpdateEvent(QAccessibleInterface *iface, int position, const QString &oldText, const QString &text)
+        : QAccessibleTextCursorEvent(iface, position + text.length())
+        , m_position(position), m_oldText(oldText), m_text(text)
+    {
+        m_type = QAccessible::TextUpdated;
+    }
+    QString textRemoved() const {
+        return m_oldText;
+    }
+    QString textInserted() const {
+        return m_text;
+    }
+    int changePosition() const {
+        return m_position;
+    }
+
+protected:
+    int m_position;
+    QString m_oldText;
+    QString m_text;
+};
+
+class Q_GUI_EXPORT QAccessibleValueChangeEvent : public QAccessibleEvent
+{
+public:
+    inline QAccessibleValueChangeEvent(QObject *obj, const QVariant &val)
+        : QAccessibleEvent(obj, QAccessible::InvalidEvent)
+      , m_value(val)
+    {
+        m_type = QAccessible::ValueChanged;
+    }
+    inline QAccessibleValueChangeEvent(QAccessibleInterface *iface, const QVariant &val)
+        : QAccessibleEvent(iface, QAccessible::InvalidEvent)
+      , m_value(val)
+    {
+        m_type = QAccessible::ValueChanged;
+    }
+
+    void setValue(const QVariant & val) { m_value= val; }
+    QVariant value() const { return m_value; }
+
+protected:
+    QVariant m_value;
+};
+
+class Q_GUI_EXPORT QAccessibleTableModelChangeEvent : public QAccessibleEvent
+{
+public:
+    enum ModelChangeType {
+        ModelReset,
+        DataChanged,
+        RowsInserted,
+        ColumnsInserted,
+        RowsRemoved,
+        ColumnsRemoved
+    };
+
+    inline QAccessibleTableModelChangeEvent(QObject *obj, ModelChangeType changeType)
+        : QAccessibleEvent(obj, QAccessible::InvalidEvent)
+        , m_modelChangeType(changeType)
+        , m_firstRow(-1), m_firstColumn(-1), m_lastRow(-1), m_lastColumn(-1)
+    {
+        m_type = QAccessible::TableModelChanged;
+    }
+    inline QAccessibleTableModelChangeEvent(QAccessibleInterface *iface, ModelChangeType changeType)
+        : QAccessibleEvent(iface, QAccessible::InvalidEvent)
+        , m_modelChangeType(changeType)
+        , m_firstRow(-1), m_firstColumn(-1), m_lastRow(-1), m_lastColumn(-1)
+    {
+        m_type = QAccessible::TableModelChanged;
+    }
+
+    void setModelChangeType(ModelChangeType changeType) { m_modelChangeType = changeType; }
+    ModelChangeType modelChangeType() const { return m_modelChangeType; }
+
+    void setFirstRow(int row) { m_firstRow = row; }
+    void setFirstColumn(int col) { m_firstColumn = col; }
+    void setLastRow(int row) { m_lastRow = row; }
+    void setLastColumn(int col) { m_lastColumn = col; }
+    int firstRow() const { return m_firstRow; }
+    int firstColumn() const { return m_firstColumn; }
+    int lastRow() const { return m_lastRow; }
+    int lastColumn() const { return m_lastColumn; }
+
+protected:
+    ModelChangeType m_modelChangeType;
+    int m_firstRow;
+    int m_firstColumn;
+    int m_lastRow;
+    int m_lastColumn;
+};
+
+#define QAccessibleInterface_iid "org.qt-project.Qt.QAccessibleInterface"
 Q_DECLARE_INTERFACE(QAccessibleInterface, QAccessibleInterface_iid)
 
-#endif // QT_NO_ACCESSIBILITY
+Q_GUI_EXPORT const char *qAccessibleRoleString(QAccessible::Role role);
+Q_GUI_EXPORT const char *qAccessibleEventString(QAccessible::Event event);
+
+#ifndef QT_NO_DEBUG_STREAM
+Q_GUI_EXPORT QDebug operator<<(QDebug d, const QAccessibleInterface *iface);
+Q_GUI_EXPORT QDebug operator<<(QDebug d, const QAccessibleEvent &ev);
+#endif
+
+#if QT_DEPRECATED_SINCE(5, 0)
+inline void QAccessible::updateAccessibility(QObject *object, int child, Event reason)
+{
+    Q_ASSERT(object);
+
+    QAccessibleEvent ev(object, reason);
+    ev.setChild(child);
+    updateAccessibility(&ev);
+}
+#endif
 
 QT_END_NAMESPACE
 
-QT_END_HEADER
-
 #endif // QACCESSIBLE_H
+#endif //!QT_NO_ACCESSIBILITY

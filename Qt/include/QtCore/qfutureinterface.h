@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -42,19 +42,16 @@
 #ifndef QFUTUREINTERFACE_H
 #define QFUTUREINTERFACE_H
 
-#include <QtCore/qglobal.h>
 #include <QtCore/qrunnable.h>
 
 #ifndef QT_NO_QFUTURE
 
 #include <QtCore/qmutex.h>
-#include <QtCore/qtconcurrentexception.h>
-#include <QtCore/qtconcurrentresultstore.h>
+#include <QtCore/qexception.h>
+#include <QtCore/qresultstore.h>
 
-QT_BEGIN_HEADER
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
 
 template <typename T> class QFuture;
 class QFutureInterfaceBasePrivate;
@@ -83,7 +80,7 @@ public:
     void reportFinished();
     void reportCanceled();
 #ifndef QT_NO_EXCEPTIONS
-    void reportException(const QtConcurrent::Exception &e);
+    void reportException(const QException &e);
 #endif
     void reportResultsReady(int beginIndex, int endIndex);
 
@@ -122,16 +119,17 @@ public:
     void waitForResume();
 
     QMutex *mutex() const;
-    QtConcurrent::internal::ExceptionStore &exceptionStore();
-    QtConcurrent::ResultStoreBase &resultStoreBase();
-    const QtConcurrent::ResultStoreBase &resultStoreBase() const;
+    QtPrivate::ExceptionStore &exceptionStore();
+    QtPrivate::ResultStoreBase &resultStoreBase();
+    const QtPrivate::ResultStoreBase &resultStoreBase() const;
 
     inline bool operator==(const QFutureInterfaceBase &other) const { return d == other.d; }
     inline bool operator!=(const QFutureInterfaceBase &other) const { return d != other.d; }
     QFutureInterfaceBase &operator=(const QFutureInterfaceBase &other);
 
 protected:
-    bool referenceCountIsOne() const;
+    bool refT() const;
+    bool derefT() const;
 public:
 
 #ifndef QFUTURE_TEST
@@ -150,13 +148,17 @@ class QFutureInterface : public QFutureInterfaceBase
 public:
     QFutureInterface(State initialState = NoState)
         : QFutureInterfaceBase(initialState)
-    { }
+    {
+        refT();
+    }
     QFutureInterface(const QFutureInterface &other)
         : QFutureInterfaceBase(other)
-    { }
+    {
+        refT();
+    }
     ~QFutureInterface()
     {
-        if (referenceCountIsOne())
+        if (!derefT())
             resultStore().clear();
     }
 
@@ -165,7 +167,8 @@ public:
 
     QFutureInterface &operator=(const QFutureInterface &other)
     {
-        if (referenceCountIsOne())
+        other.refT();
+        if (!derefT())
             resultStore().clear();
         QFutureInterfaceBase::operator=(other);
         return *this;
@@ -182,10 +185,10 @@ public:
     inline const T *resultPointer(int index) const;
     inline QList<T> results();
 private:
-    QtConcurrent::ResultStore<T> &resultStore()
-    { return static_cast<QtConcurrent::ResultStore<T> &>(resultStoreBase()); }
-    const QtConcurrent::ResultStore<T> &resultStore() const
-    { return static_cast<const QtConcurrent::ResultStore<T> &>(resultStoreBase()); }
+    QtPrivate::ResultStore<T> &resultStore()
+    { return static_cast<QtPrivate::ResultStore<T> &>(resultStoreBase()); }
+    const QtPrivate::ResultStore<T> &resultStore() const
+    { return static_cast<const QtPrivate::ResultStore<T> &>(resultStoreBase()); }
 };
 
 template <typename T>
@@ -196,7 +199,7 @@ inline void QFutureInterface<T>::reportResult(const T *result, int index)
         return;
     }
 
-    QtConcurrent::ResultStore<T> &store = resultStore();
+    QtPrivate::ResultStore<T> &store = resultStore();
 
 
     if (store.filterMode()) {
@@ -223,7 +226,7 @@ inline void QFutureInterface<T>::reportResults(const QVector<T> &_results, int b
         return;
     }
 
-    QtConcurrent::ResultStore<T> &store = resultStore();
+    QtPrivate::ResultStore<T> &store = resultStore();
 
     if (store.filterMode()) {
         const int resultCountBefore = store.count();
@@ -231,7 +234,7 @@ inline void QFutureInterface<T>::reportResults(const QVector<T> &_results, int b
         this->reportResultsReady(resultCountBefore, store.count());
     } else {
         const int insertIndex = store.addResults(beginIndex, &_results, count);
-        this->reportResultsReady(insertIndex, insertIndex + _results.count());    
+        this->reportResultsReady(insertIndex, insertIndex + _results.count());
     }
 }
 
@@ -269,7 +272,7 @@ inline QList<T> QFutureInterface<T>::results()
     QList<T> res;
     QMutexLocker lock(mutex());
 
-    QtConcurrent::ResultIterator<T> it = resultStore().begin();
+    QtPrivate::ResultIterator<T> it = resultStore().begin();
     while (it != resultStore().end()) {
         res.append(it.value());
         ++it;
@@ -302,12 +305,10 @@ public:
 
     void reportResult(const void *, int) { }
     void reportResults(const QVector<void> &, int) { }
-    void reportFinished(void * = 0) { QFutureInterfaceBase::reportFinished(); }
+    void reportFinished(const void * = 0) { QFutureInterfaceBase::reportFinished(); }
 };
 
 QT_END_NAMESPACE
-QT_END_HEADER
-
-#endif // QT_NO_CONCURRENT
+#endif // QT_NO_QFUTURE
 
 #endif // QFUTUREINTERFACE_H

@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -48,12 +48,11 @@
 
 #include <new>
 #include <string.h>
-
-QT_BEGIN_HEADER
+#include <stdlib.h>
+#include <algorithm>
 
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
 
 template<class T, int Prealloc>
 class QPodList;
@@ -78,7 +77,7 @@ public:
                 i->~T();
         }
         if (ptr != reinterpret_cast<T *>(array))
-            qFree(ptr);
+            free(ptr);
     }
     inline QVarLengthArray<T, Prealloc> &operator=(const QVarLengthArray<T, Prealloc> &other)
     {
@@ -95,12 +94,22 @@ public:
     }
     inline int size() const { return s; }
     inline int count() const { return s; }
+    inline int length() const { return s; }
+    inline T& first() { Q_ASSERT(!isEmpty()); return *begin(); }
+    inline const T& first() const { Q_ASSERT(!isEmpty()); return *begin(); }
+    T& last() { Q_ASSERT(!isEmpty()); return *(end() - 1); }
+    const T& last() const { Q_ASSERT(!isEmpty()); return *(end() - 1); }
     inline bool isEmpty() const { return (s == 0); }
     inline void resize(int size);
     inline void clear() { resize(0); }
+    inline void squeeze();
 
     inline int capacity() const { return a; }
     inline void reserve(int size);
+
+    inline int indexOf(const T &t, int from = 0) const;
+    inline int lastIndexOf(const T &t, int from = -1) const;
+    inline bool contains(const T &t) const;
 
     inline T &operator[](int idx) {
         Q_ASSERT(idx >= 0 && idx < s);
@@ -156,14 +165,25 @@ public:
 
     inline iterator begin() { return ptr; }
     inline const_iterator begin() const { return ptr; }
+    inline const_iterator cbegin() const { return ptr; }
     inline const_iterator constBegin() const { return ptr; }
     inline iterator end() { return ptr + s; }
     inline const_iterator end() const { return ptr + s; }
+    inline const_iterator cend() const { return ptr + s; }
     inline const_iterator constEnd() const { return ptr + s; }
-    iterator insert(iterator before, int n, const T &x);
-    inline iterator insert(iterator before, const T &x) { return insert(before, 1, x); }
-    iterator erase(iterator begin, iterator end);
-    inline iterator erase(iterator pos) { return erase(pos, pos+1); }
+    iterator insert(const_iterator before, int n, const T &x);
+    inline iterator insert(const_iterator before, const T &x) { return insert(before, 1, x); }
+    iterator erase(const_iterator begin, const_iterator end);
+    inline iterator erase(const_iterator pos) { return erase(pos, pos+1); }
+
+    // STL compatibility:
+    inline bool empty() const { return isEmpty(); }
+    inline void push_back(const T &t) { append(t); }
+    inline void pop_back() { removeLast(); }
+    inline T &front() { return first(); }
+    inline const T &front() const { return first(); }
+    inline T &back() { return last(); }
+    inline const T &back() const { return last(); }
 
 private:
     friend class QPodList<T, Prealloc>;
@@ -173,18 +193,24 @@ private:
     int s;      // size
     T *ptr;     // data
     union {
-        // ### Qt 5: Use 'Prealloc * sizeof(T)' as array size
-        char array[sizeof(qint64) * (((Prealloc * sizeof(T)) / sizeof(qint64)) + 1)];
+        char array[Prealloc * sizeof(T)];
         qint64 q_for_alignment_1;
         double q_for_alignment_2;
     };
+
+    bool isValidIterator(const const_iterator &i) const
+    {
+        return (i <= constEnd()) && (constBegin() <= i);
+    }
 };
 
 template <class T, int Prealloc>
 Q_INLINE_TEMPLATE QVarLengthArray<T, Prealloc>::QVarLengthArray(int asize)
     : s(asize) {
+    Q_STATIC_ASSERT_X(Prealloc > 0, "QVarLengthArray Prealloc must be greater than 0.");
+    Q_ASSERT_X(s >= 0, "QVarLengthArray::QVarLengthArray()", "Size must be greater than or equal to 0.");
     if (s > Prealloc) {
-        ptr = reinterpret_cast<T *>(qMalloc(s * sizeof(T)));
+        ptr = reinterpret_cast<T *>(malloc(s * sizeof(T)));
         Q_CHECK_PTR(ptr);
         a = s;
     } else {
@@ -207,6 +233,51 @@ Q_INLINE_TEMPLATE void QVarLengthArray<T, Prealloc>::reserve(int asize)
 { if (asize > a) realloc(s, asize); }
 
 template <class T, int Prealloc>
+Q_INLINE_TEMPLATE int QVarLengthArray<T, Prealloc>::indexOf(const T &t, int from) const
+{
+    if (from < 0)
+        from = qMax(from + s, 0);
+    if (from < s) {
+        T *n = ptr + from - 1;
+        T *e = ptr + s;
+        while (++n != e)
+            if (*n == t)
+                return n - ptr;
+    }
+    return -1;
+}
+
+template <class T, int Prealloc>
+Q_INLINE_TEMPLATE int QVarLengthArray<T, Prealloc>::lastIndexOf(const T &t, int from) const
+{
+    if (from < 0)
+        from += s;
+    else if (from >= s)
+        from = s - 1;
+    if (from >= 0) {
+        T *b = ptr;
+        T *n = ptr + from + 1;
+        while (n != b) {
+            if (*--n == t)
+                return n - b;
+        }
+    }
+    return -1;
+}
+
+template <class T, int Prealloc>
+Q_INLINE_TEMPLATE bool QVarLengthArray<T, Prealloc>::contains(const T &t) const
+{
+    T *b = ptr;
+    T *i = ptr + s;
+    while (i != b) {
+        if (*--i == t)
+            return true;
+    }
+    return false;
+}
+
+template <class T, int Prealloc>
 Q_OUTOFLINE_TEMPLATE void QVarLengthArray<T, Prealloc>::append(const T *abuf, int increment)
 {
     Q_ASSERT(abuf);
@@ -223,10 +294,14 @@ Q_OUTOFLINE_TEMPLATE void QVarLengthArray<T, Prealloc>::append(const T *abuf, in
         while (s < asize)
             new (ptr+(s++)) T(*abuf++);
     } else {
-        qMemCopy(&ptr[s], abuf, increment * sizeof(T));
+        memcpy(&ptr[s], abuf, increment * sizeof(T));
         s = asize;
     }
 }
+
+template <class T, int Prealloc>
+Q_INLINE_TEMPLATE void QVarLengthArray<T, Prealloc>::squeeze()
+{ realloc(s, s); }
 
 template <class T, int Prealloc>
 Q_OUTOFLINE_TEMPLATE void QVarLengthArray<T, Prealloc>::realloc(int asize, int aalloc)
@@ -237,35 +312,36 @@ Q_OUTOFLINE_TEMPLATE void QVarLengthArray<T, Prealloc>::realloc(int asize, int a
 
     const int copySize = qMin(asize, osize);
     if (aalloc != a) {
-        ptr = reinterpret_cast<T *>(qMalloc(aalloc * sizeof(T)));
-        Q_CHECK_PTR(ptr);
-        if (ptr) {
-            s = 0;
+        if (aalloc > Prealloc) {
+            T* newPtr = reinterpret_cast<T *>(malloc(aalloc * sizeof(T)));
+            Q_CHECK_PTR(newPtr); // could throw
+            // by design: in case of QT_NO_EXCEPTIONS malloc must not fail or it crashes here
+            ptr = newPtr;
             a = aalloc;
-
-            if (QTypeInfo<T>::isStatic) {
-                QT_TRY {
-                    // copy all the old elements
-                    while (s < copySize) {
-                        new (ptr+s) T(*(oldPtr+s));
-                        (oldPtr+s)->~T();
-                        s++;
-                    }
-                } QT_CATCH(...) {
-                    // clean up all the old objects and then free the old ptr
-                    int sClean = s;
-                    while (sClean < osize)
-                        (oldPtr+(sClean++))->~T();
-                    if (oldPtr != reinterpret_cast<T *>(array) && oldPtr != ptr)
-                        qFree(oldPtr);
-                    QT_RETHROW;
+        } else {
+            ptr = reinterpret_cast<T *>(array);
+            a = Prealloc;
+        }
+        s = 0;
+        if (QTypeInfo<T>::isStatic) {
+            QT_TRY {
+                // copy all the old elements
+                while (s < copySize) {
+                    new (ptr+s) T(*(oldPtr+s));
+                    (oldPtr+s)->~T();
+                    s++;
                 }
-            } else {
-                qMemCopy(ptr, oldPtr, copySize * sizeof(T));
+            } QT_CATCH(...) {
+                // clean up all the old objects and then free the old ptr
+                int sClean = s;
+                while (sClean < osize)
+                    (oldPtr+(sClean++))->~T();
+                if (oldPtr != reinterpret_cast<T *>(array) && oldPtr != ptr)
+                    free(oldPtr);
+                QT_RETHROW;
             }
         } else {
-            ptr = oldPtr;
-            return;
+            memcpy(ptr, oldPtr, copySize * sizeof(T));
         }
     }
     s = copySize;
@@ -277,7 +353,7 @@ Q_OUTOFLINE_TEMPLATE void QVarLengthArray<T, Prealloc>::realloc(int asize, int a
     }
 
     if (oldPtr != reinterpret_cast<T *>(array) && oldPtr != ptr)
-        qFree(oldPtr);
+        free(oldPtr);
 
     if (QTypeInfo<T>::isComplex) {
         // call default constructor for new objects (which can throw)
@@ -291,7 +367,7 @@ Q_OUTOFLINE_TEMPLATE void QVarLengthArray<T, Prealloc>::realloc(int asize, int a
 template <class T, int Prealloc>
 Q_OUTOFLINE_TEMPLATE T QVarLengthArray<T, Prealloc>::value(int i) const
 {
-    if (i < 0 || i >= size()) {
+    if (uint(i) >= uint(size())) {
         return T();
     }
     return at(i);
@@ -299,7 +375,7 @@ Q_OUTOFLINE_TEMPLATE T QVarLengthArray<T, Prealloc>::value(int i) const
 template <class T, int Prealloc>
 Q_OUTOFLINE_TEMPLATE T QVarLengthArray<T, Prealloc>::value(int i, const T &defaultValue) const
 {
-    return (i < 0 || i >= size()) ? defaultValue : at(i);
+    return (uint(i) >= uint(size())) ? defaultValue : at(i);
 }
 
 template <class T, int Prealloc>
@@ -332,8 +408,10 @@ inline void QVarLengthArray<T, Prealloc>::replace(int i, const T &t)
 
 
 template <class T, int Prealloc>
-Q_OUTOFLINE_TEMPLATE typename QVarLengthArray<T, Prealloc>::iterator QVarLengthArray<T, Prealloc>::insert(iterator before, size_type n, const T &t)
+Q_OUTOFLINE_TEMPLATE typename QVarLengthArray<T, Prealloc>::iterator QVarLengthArray<T, Prealloc>::insert(const_iterator before, size_type n, const T &t)
 {
+    Q_ASSERT_X(isValidIterator(before), "QVarLengthArray::insert", "The specified const_iterator argument 'before' is invalid");
+
     int offset = int(before - ptr);
     if (n != 0) {
         resize(s + n);
@@ -359,13 +437,16 @@ Q_OUTOFLINE_TEMPLATE typename QVarLengthArray<T, Prealloc>::iterator QVarLengthA
 }
 
 template <class T, int Prealloc>
-Q_OUTOFLINE_TEMPLATE typename QVarLengthArray<T, Prealloc>::iterator QVarLengthArray<T, Prealloc>::erase(iterator abegin, iterator aend)
+Q_OUTOFLINE_TEMPLATE typename QVarLengthArray<T, Prealloc>::iterator QVarLengthArray<T, Prealloc>::erase(const_iterator abegin, const_iterator aend)
 {
+    Q_ASSERT_X(isValidIterator(abegin), "QVarLengthArray::insert", "The specified const_iterator argument 'abegin' is invalid");
+    Q_ASSERT_X(isValidIterator(aend), "QVarLengthArray::insert", "The specified const_iterator argument 'aend' is invalid");
+
     int f = int(abegin - ptr);
     int l = int(aend - ptr);
     int n = l - f;
     if (QTypeInfo<T>::isComplex) {
-        qCopy(ptr + l, ptr + s, ptr + f);
+        std::copy(ptr + l, ptr + s, ptr + f);
         T *i = ptr + s;
         T *b = ptr + s - n;
         while (i != b) {
@@ -398,7 +479,5 @@ bool operator!=(const QVarLengthArray<T, Prealloc1> &l, const QVarLengthArray<T,
 }
 
 QT_END_NAMESPACE
-
-QT_END_HEADER
 
 #endif // QVARLENGTHARRAY_H

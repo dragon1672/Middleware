@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -46,11 +46,8 @@
 #include <QtCore/qbytearray.h>
 #include <QtCore/qobjectdefs.h>
 
-QT_BEGIN_HEADER
-
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
 
 class QEventPrivate;
 class Q_CORE_EXPORT QEvent           // event base class
@@ -76,6 +73,7 @@ public:
         KeyRelease = 7,                         // key released
         FocusIn = 8,                            // keyboard focus received
         FocusOut = 9,                           // keyboard focus lost
+        FocusAboutToChange = 23,                // keyboard focus is about to be lost
         Enter = 10,                             // mouse enters widget
         Leave = 11,                             // mouse leaves widget
         Paint = 12,                             // paint widget
@@ -89,9 +87,6 @@ public:
         Quit = 20,                              // request to quit application
         ParentChange = 21,                      // widget has been reparented
         ParentAboutToChange = 131,              // sent just before the parent change is done
-#ifdef QT3_SUPPORT
-        Reparent = ParentChange,
-#endif
         ThreadChange = 22,                      // object has changed threads
         WindowActivate = 24,                    // window was activated
         WindowDeactivate = 25,                  // window was deactivated
@@ -118,11 +113,6 @@ public:
         DragResponse = 64,                      // drag accepted/rejected
         ChildAdded = 68,                        // new child widget
         ChildPolished = 69,                     // polished child widget
-#ifdef QT3_SUPPORT
-        ChildInsertedRequest = 67,              // send ChildInserted compatibility events to receiver
-        ChildInserted = 70,                     // compatibility child inserted
-        LayoutHint = 72,                        // compatibility relayout request
-#endif
         ChildRemoved = 71,                      // deleted child widget
         ShowWindowRequest = 73,                 // widget's window should be mapped
         PolishRequest = 74,                     // widget should be polished
@@ -136,7 +126,6 @@ public:
         DeactivateControl = 81,                 // ActiveX deactivation
         ContextMenu = 82,                       // context popup menu
         InputMethod = 83,                       // input method
-        AccessibilityPrepare = 86,              // accessibility information is requested
         TabletMove = 87,                        // Wacom tablet event
         LocaleChange = 88,                      // the system locale changed
         LanguageChange = 89,                    // the application language changed
@@ -174,23 +163,13 @@ public:
         Shortcut = 117,                         // shortcut triggered
         ShortcutOverride = 51,                  // shortcut override request
 
-#ifdef QT3_SUPPORT
-        Accel = 30,                             // accelerator event
-        AccelAvailable = 32,                    // accelerator available event
-        AccelOverride = ShortcutOverride,       // accelerator override event
-#endif
-
         WhatsThisClicked = 118,
 
-#ifdef QT3_SUPPORT
-        CaptionChange = WindowTitleChange,
-        IconChange = WindowIconChange,
-#endif
         ToolBarChange = 120,                    // toolbar visibility toggled
 
-        ApplicationActivate = 121,              // application has been changed to active
+        ApplicationActivate = 121,              // deprecated. Use ApplicationStateChange instead.
         ApplicationActivated = ApplicationActivate, // deprecated
-        ApplicationDeactivate = 122,            // application has been changed to inactive
+        ApplicationDeactivate = 122,            // deprecated. Use ApplicationStateChange instead.
         ApplicationDeactivated = ApplicationDeactivate, // deprecated
 
         QueryWhatsThis = 123,                   // query what's this widget help
@@ -203,19 +182,13 @@ public:
         HoverLeave = 128,                       // mouse cursor leaves a hover widget
         HoverMove = 129,                        // mouse cursor move inside a hover widget
 
-        AccessibilityHelp = 119,                // accessibility help text request
-        AccessibilityDescription = 130,         // accessibility description text request
-
         // last event id used = 132
 
 #ifdef QT_KEYPAD_NAVIGATION
-        EnterEditFocus = 150,                   // enter edit mode in keypad navigation (Defined only with QT_KEYPAD_NAVIGATION)
-        LeaveEditFocus = 151,                   // leave edit mode in keypad navigation (Defined only with QT_KEYPAD_NAVIGATION)
+        EnterEditFocus = 150,                   // enter edit mode in keypad navigation
+        LeaveEditFocus = 151,                   // enter edit mode in keypad navigation
 #endif
         AcceptDropsChange = 152,
-
-        MenubarUpdated = 153,                    // Support event for Q3MainWindow, which needs to
-                                                 // knwow when QMenubar is updated.
 
         ZeroTimerEvent = 154,                   // Used for Windows Zero timer events
 
@@ -276,18 +249,37 @@ public:
         TouchEnd = 196,
 
 #ifndef QT_NO_GESTURES
-        NativeGesture = 197,                    // Internal for platform gesture support
+        NativeGesture = 197,                    // QtGui native gesture
 #endif
         RequestSoftwareInputPanel = 199,
         CloseSoftwareInputPanel = 200,
-
-        UpdateSoftKeys = 201,                   // Internal for compressing soft key updates
 
         WinIdChange = 203,
 #ifndef QT_NO_GESTURES
         Gesture = 198,
         GestureOverride = 202,
 #endif
+        ScrollPrepare = 204,
+        Scroll = 205,
+
+        Expose = 206,
+
+        InputMethodQuery = 207,
+        OrientationChange = 208,                // Screen orientation has changed
+
+        TouchCancel = 209,
+
+        ThemeChange = 210,
+
+        SockClose = 211,                        // socket closed
+
+        PlatformPanel = 212,
+
+        StyleAnimationUpdate = 213,             // style animation target should be updated
+        ApplicationStateChange = 214,
+
+        WindowChangeInternal = 215,             // internal for QQuickWidget
+
         // 512 reserved for Qt Jambi's MetaCall event
         // 513 reserved for Qt Jambi's DeleteOnMainThread event
 
@@ -295,8 +287,10 @@ public:
         MaxUser = 65535                         // last user event id
     };
 
-    QEvent(Type type);
+    explicit QEvent(Type type);
+    QEvent(const QEvent &other);
     virtual ~QEvent();
+    QEvent &operator=(const QEvent &other);
     inline Type type() const { return static_cast<Type>(t); }
     inline bool spontaneous() const { return spont; }
 
@@ -323,13 +317,13 @@ private:
     friend class QThreadData;
     friend class QApplication;
     friend class QApplicationPrivate;
-    friend class Q3AccelManager;
     friend class QShortcutMap;
     friend class QETWidget;
     friend class QGraphicsView;
     friend class QGraphicsViewPrivate;
     friend class QGraphicsScene;
     friend class QGraphicsScenePrivate;
+    friend class QWidgetWindow;
 #ifndef QT_NO_GESTURES
     friend class QGestureManager;
 #endif
@@ -338,7 +332,7 @@ private:
 class Q_CORE_EXPORT QTimerEvent : public QEvent
 {
 public:
-    QTimerEvent( int timerId );
+    explicit QTimerEvent( int timerId );
     ~QTimerEvent();
     int timerId() const { return id; }
 protected:
@@ -354,30 +348,16 @@ public:
     ~QChildEvent();
     QObject *child() const { return c; }
     bool added() const { return type() == ChildAdded; }
-#ifdef QT3_SUPPORT
-    QT3_SUPPORT bool inserted() const { return type() == ChildInserted; }
-#endif
     bool polished() const { return type() == ChildPolished; }
     bool removed() const { return type() == ChildRemoved; }
 protected:
     QObject *c;
 };
 
-#ifdef QT3_SUPPORT
-class Q_CORE_EXPORT QCustomEvent : public QEvent
-{
-public:
-    QT3_SUPPORT_CONSTRUCTOR QCustomEvent(int type, void *data = 0);
-    ~QCustomEvent();
-    QT3_SUPPORT void *data()  const { return d; }
-    QT3_SUPPORT void setData(void* aData) { d = reinterpret_cast<QEventPrivate *>(aData); }
-};
-#endif
-
 class Q_CORE_EXPORT QDynamicPropertyChangeEvent : public QEvent
 {
 public:
-    QDynamicPropertyChangeEvent(const QByteArray &name);
+    explicit QDynamicPropertyChangeEvent(const QByteArray &name);
     ~QDynamicPropertyChangeEvent();
 
     inline QByteArray propertyName() const { return n; }
@@ -386,8 +366,17 @@ private:
     QByteArray n;
 };
 
-QT_END_NAMESPACE
+class Q_CORE_EXPORT QDeferredDeleteEvent : public QEvent
+{
+public:
+    explicit QDeferredDeleteEvent();
+    ~QDeferredDeleteEvent();
+    int loopLevel() const { return level; }
+private:
+    int level;
+    friend class QCoreApplication;
+};
 
-QT_END_HEADER
+QT_END_NAMESPACE
 
 #endif // QCOREEVENT_H

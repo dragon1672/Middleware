@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtGui module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -46,20 +46,13 @@
 #include <QtCore/qstring.h>
 #include <QtCore/qsharedpointer.h>
 
-#if defined(Q_WS_X11) || defined(Q_WS_QWS)
-typedef struct FT_FaceRec_* FT_Face;
-#endif
-
-QT_BEGIN_HEADER
 
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Gui)
 
 class QFontPrivate;                                     /* don't touch */
 class QStringList;
 class QVariant;
-class Q3TextFormatCollection;
 
 class Q_GUI_EXPORT QFont
 {
@@ -166,6 +159,9 @@ public:
     QFont(const QFont &);
     ~QFont();
 
+    void swap(QFont &other)
+    { qSwap(d, other.d); qSwap(resolve_mask, other.resolve_mask); }
+
     QString family() const;
     void setFamily(const QString &);
 
@@ -246,21 +242,11 @@ public:
     { qSwap(d, other.d); qSwap(resolve_mask, other.resolve_mask);  return *this; }
 #endif
 
-#ifdef Q_WS_WIN
-    HFONT handle() const;
-#else // !Q_WS_WIN
-    Qt::HANDLE handle() const;
-#endif // Q_WS_WIN
-#ifdef Q_WS_MAC
-    quint32 macFontID() const;
-#endif
-#if defined(Q_WS_X11) || defined(Q_WS_QWS)
-    FT_Face freetypeFace() const;
-#endif
-
+#if QT_DEPRECATED_SINCE(5, 3)
     // needed for X11
-    void setRawName(const QString &);
-    QString rawName() const;
+    QT_DEPRECATED void setRawName(const QString &);
+    QT_DEPRECATED QString rawName() const;
+#endif
 
     QString key() const;
 
@@ -272,12 +258,13 @@ public:
     static QStringList substitutions();
     static void insertSubstitution(const QString&, const QString &);
     static void insertSubstitutions(const QString&, const QStringList &);
-    static void removeSubstitution(const QString &);
+    static void removeSubstitutions(const QString &);
+#if QT_DEPRECATED_SINCE(5, 0)
+    static QT_DEPRECATED void removeSubstitution(const QString &family) { removeSubstitutions(family); }
+#endif
     static void initialize();
     static void cleanup();
-#ifndef Q_WS_QWS
     static void cacheStatistics();
-#endif
 
     QString defaultFamily() const;
     QString lastResortFamily() const;
@@ -287,25 +274,11 @@ public:
     inline uint resolve() const { return resolve_mask; }
     inline void resolve(uint mask) { resolve_mask = mask; }
 
-#ifdef QT3_SUPPORT
-    static QT3_SUPPORT QFont defaultFont();
-    static QT3_SUPPORT void setDefaultFont(const QFont &);
-    QT3_SUPPORT void setPixelSizeFloat(qreal);
-    QT3_SUPPORT qreal pointSizeFloat() const { return pointSizeF(); }
-    QT3_SUPPORT void setPointSizeFloat(qreal size) { setPointSizeF(size); }
-#endif
-
 private:
-    QFont(QFontPrivate *);
+    explicit QFont(QFontPrivate *);
 
     void detach();
 
-#if defined(Q_WS_MAC)
-    void macSetFont(QPaintDevice *);
-#elif defined(Q_WS_X11)
-    void x11SetScreen(int screen = -1);
-    int x11Screen() const;
-#endif
 
     friend class QFontPrivate;
     friend class QFontDialogPrivate;
@@ -314,17 +287,15 @@ private:
     friend class QFontInfo;
     friend class QPainter;
     friend class QPainterPrivate;
-    friend class QPSPrintEngineFont;
     friend class QApplication;
     friend class QWidget;
     friend class QWidgetPrivate;
-    friend class Q3TextFormatCollection;
     friend class QTextLayout;
     friend class QTextEngine;
     friend class QStackTextEngine;
     friend class QTextLine;
     friend struct QScriptLine;
-    friend class QGLContext;
+    friend class QOpenGLContext;
     friend class QWin32PaintEngine;
     friend class QAlphaPaintEngine;
     friend class QPainterPath;
@@ -344,6 +315,9 @@ private:
     uint resolve_mask;
 };
 
+Q_DECLARE_SHARED(QFont)
+
+Q_GUI_EXPORT uint qHash(const QFont &font, uint seed = 0) Q_DECL_NOTHROW;
 
 inline bool QFont::bold() const
 { return weight() > Normal; }
@@ -376,7 +350,5 @@ Q_GUI_EXPORT QDebug operator<<(QDebug, const QFont &);
 #endif
 
 QT_END_NAMESPACE
-
-QT_END_HEADER
 
 #endif // QFONT_H

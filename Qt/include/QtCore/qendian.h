@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -46,16 +46,14 @@
 
 // include stdlib.h and hope that it defines __GLIBC__ for glibc-based systems
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef __GLIBC__
 #include <byteswap.h>
 #endif
 
-QT_BEGIN_HEADER
-
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
 
 /*
  * ENDIAN FUNCTIONS
@@ -80,7 +78,10 @@ template <typename T> inline void qbswap(const T src, uchar *dest)
 // If you want to avoid the memcopy, you must write specializations for this function
 template <typename T> inline void qToUnaligned(const T src, uchar *dest)
 {
-    qMemCopy(dest, &src, sizeof(T));
+    // Using sizeof(T) inside memcpy function produces internal compiler error with
+    // MSVC2008/ARM in tst_endian -> use extra indirection to resolve size of T.
+    const size_t size = sizeof(T);
+    memcpy(dest, &src, size);
 }
 
 /* T qFromLittleEndian(const uchar *src)
@@ -171,6 +172,11 @@ template <> inline qint32 qFromLittleEndian<qint32>(const uchar *src)
 template <> inline qint16 qFromLittleEndian<qint16>(const uchar *src)
 { return static_cast<qint16>(qFromLittleEndian<quint16>(src)); }
 #endif
+
+template <> inline quint8 qFromLittleEndian<quint8>(const uchar *src)
+{ return static_cast<quint8>(src[0]); }
+template <> inline qint8 qFromLittleEndian<qint8>(const uchar *src)
+{ return static_cast<qint8>(src[0]); }
 
 /* This function will read a big-endian (also known as network order) encoded value from \a src
  * and return the value in host-endian encoding.
@@ -264,6 +270,12 @@ template <> inline qint32 qFromBigEndian<qint32>(const uchar *src)
 template <> inline qint16 qFromBigEndian<qint16>(const uchar *src)
 { return static_cast<qint16>(qFromBigEndian<quint16>(src)); }
 #endif
+
+template <> inline quint8 qFromBigEndian<quint8>(const uchar *src)
+{ return static_cast<quint8>(src[0]); }
+template <> inline qint8 qFromBigEndian<qint8>(const uchar *src)
+{ return static_cast<qint8>(src[0]); }
+
 /*
  * T qbswap(T source).
  * Changes the byte order of a value from big endian to little endian or vice versa.
@@ -368,8 +380,11 @@ template <> inline quint8 qbswap<quint8>(quint8 source)
     return source;
 }
 
-QT_END_NAMESPACE
+template <> inline qint8 qbswap<qint8>(qint8 source)
+{
+    return source;
+}
 
-QT_END_HEADER
+QT_END_NAMESPACE
 
 #endif // QENDIAN_H

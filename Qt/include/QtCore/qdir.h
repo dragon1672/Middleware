@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -47,19 +47,14 @@
 #include <QtCore/qstringlist.h>
 #include <QtCore/qshareddata.h>
 
-QT_BEGIN_HEADER
-
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
 
+class QDirIterator;
 class QDirPrivate;
 
 class Q_CORE_EXPORT QDir
 {
-protected:
-    QSharedDataPointer<QDirPrivate> d_ptr;
-
 public:
     enum Filter { Dirs        = 0x001,
                   Files       = 0x002,
@@ -67,17 +62,11 @@ public:
                   NoSymLinks  = 0x008,
                   AllEntries  = Dirs | Files | Drives,
                   TypeMask    = 0x00f,
-#ifdef QT3_SUPPORT
-                  All         = AllEntries,
-#endif
 
                   Readable    = 0x010,
                   Writable    = 0x020,
                   Executable  = 0x040,
                   PermissionMask    = 0x070,
-#ifdef QT3_SUPPORT
-                  RWEMask     = 0x070,
-#endif
 
                   Modified    = 0x080,
                   Hidden      = 0x100,
@@ -87,19 +76,13 @@ public:
 
                   AllDirs       = 0x400,
                   CaseSensitive = 0x800,
-                  NoDotAndDotDot = 0x1000, // ### Qt5 NoDotAndDotDot = NoDot|NoDotDot
                   NoDot         = 0x2000,
                   NoDotDot      = 0x4000,
+                  NoDotAndDotDot = NoDot | NoDotDot,
 
                   NoFilter = -1
-#ifdef QT3_SUPPORT
-                  ,DefaultFilter = NoFilter
-#endif
     };
     Q_DECLARE_FLAGS(Filters, Filter)
-#ifdef QT3_SUPPORT
-    typedef Filters FilterSpec;
-#endif
 
     enum SortFlag { Name        = 0x00,
                     Time        = 0x01,
@@ -111,12 +94,9 @@ public:
                     Reversed    = 0x08,
                     IgnoreCase  = 0x10,
                     DirsLast    = 0x20,
-                    LocaleAware = 0x40, 
+                    LocaleAware = 0x40,
                     Type        = 0x80,
                     NoSort = -1
-#ifdef QT3_SUPPORT
-                  ,DefaultSort = NoSort
-#endif
     };
     Q_DECLARE_FLAGS(SortFlags, SortFlag)
 
@@ -132,6 +112,9 @@ public:
     inline QDir &operator=(QDir &&other)
     { qSwap(d_ptr, other.d_ptr); return *this; }
 #endif
+
+    inline void swap(QDir &other)
+    { qSwap(d_ptr, other.d_ptr); }
 
     void setPath(const QString &path);
     QString path() const;
@@ -149,9 +132,6 @@ public:
     QString absoluteFilePath(const QString &fileName) const;
     QString relativeFilePath(const QString &fileName) const;
 
-#ifdef QT_DEPRECATED
-    QT_DEPRECATED static QString convertSeparators(const QString &pathName);
-#endif
     static QString toNativeSeparators(const QString &pathName);
     static QString fromNativeSeparators(const QString &pathName);
 
@@ -183,6 +163,8 @@ public:
     bool rmdir(const QString &dirName) const;
     bool mkpath(const QString &dirPath) const;
     bool rmpath(const QString &dirPath) const;
+
+    bool removeRecursively();
 
     bool isReadable() const;
     bool exists() const;
@@ -224,37 +206,23 @@ public:
     static QString cleanPath(const QString &path);
     void refresh() const;
 
-#ifdef QT3_SUPPORT
-    typedef SortFlags SortSpec;
-    inline QT3_SUPPORT QString absPath() const { return absolutePath(); }
-    inline QT3_SUPPORT QString absFilePath(const QString &fileName, bool acceptAbsPath = true) const
-       { Q_UNUSED(acceptAbsPath); return absoluteFilePath(fileName); }
-    QT3_SUPPORT bool matchAllDirs() const;
-    QT3_SUPPORT void setMatchAllDirs(bool on);
-    inline QT3_SUPPORT QStringList entryList(const QString &nameFilter, Filters filters = NoFilter,
-                                           SortFlags sort = NoSort) const
-    { return entryList(nameFiltersFromString(nameFilter), filters, sort); }
-    inline QT3_SUPPORT QFileInfoList entryInfoList(const QString &nameFilter,
-                                                 Filters filters = NoFilter,
-                                                 SortFlags sort = NoSort) const
-    { return entryInfoList(nameFiltersFromString(nameFilter), filters, sort); }
+protected:
+    explicit QDir(QDirPrivate &d);
 
-    QT3_SUPPORT QString nameFilter() const;
-    QT3_SUPPORT void setNameFilter(const QString &nameFilter);
+    QSharedDataPointer<QDirPrivate> d_ptr;
 
-    inline QT3_SUPPORT bool mkdir(const QString &dirName, bool acceptAbsPath) const
-        { Q_UNUSED(acceptAbsPath); return mkdir(dirName); }
-    inline QT3_SUPPORT bool rmdir(const QString &dirName, bool acceptAbsPath) const
-        { Q_UNUSED(acceptAbsPath); return rmdir(dirName); }
+private:
+    friend class QDirIterator;
+    // Q_DECLARE_PRIVATE equivalent for shared data pointers
+    QDirPrivate* d_func();
+    inline const QDirPrivate* d_func() const
+    {
+        return d_ptr.constData();
+    }
 
-    inline QT3_SUPPORT void convertToAbs() { makeAbsolute(); }
-    inline QT3_SUPPORT static QString currentDirPath() { return currentPath(); }
-    inline QT3_SUPPORT static QString homeDirPath() { return homePath(); }
-    inline QT3_SUPPORT static QString rootDirPath() { return rootPath(); }
-    inline QT3_SUPPORT static QString cleanDirPath(const QString &name) { return cleanPath(name); }
-#endif // QT3_SUPPORT
 };
 
+Q_DECLARE_SHARED(QDir)
 Q_DECLARE_OPERATORS_FOR_FLAGS(QDir::Filters)
 Q_DECLARE_OPERATORS_FOR_FLAGS(QDir::SortFlags)
 
@@ -265,7 +233,5 @@ Q_CORE_EXPORT QDebug operator<<(QDebug debug, const QDir &dir);
 #endif
 
 QT_END_NAMESPACE
-
-QT_END_HEADER
 
 #endif // QDIR_H

@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -42,19 +42,16 @@
 #ifndef QMATH_H
 #define QMATH_H
 
+#if 0
+#pragma qt_class(QtMath)
+#endif
+
 #include <math.h>
 
 #include <QtCore/qglobal.h>
 
-#ifdef Q_OS_SYMBIAN
-#    include <e32math.h>
-#endif
-
-QT_BEGIN_HEADER
-
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
 
 #define QT_SINE_TABLE_SIZE 256
 
@@ -92,130 +89,82 @@ inline qreal qFabs(qreal v)
 
 inline qreal qSin(qreal v)
 {
-#ifdef Q_OS_SYMBIAN
-    TReal sin_v;
-    Math::Sin(sin_v, static_cast<TReal>(v));
-    return static_cast<qreal>(sin_v);
-#else
-#    ifdef QT_USE_MATH_H_FLOATS
-        if (sizeof(qreal) == sizeof(float))
-            return sinf(float(v));
-        else
-#    endif
-            return sin(v);
+#ifdef QT_USE_MATH_H_FLOATS
+    if (sizeof(qreal) == sizeof(float))
+        return sinf(float(v));
+    else
 #endif
+        return sin(v);
 }
 
 inline qreal qCos(qreal v)
 {
-#ifdef Q_OS_SYMBIAN
-    TReal cos_v;
-    Math::Cos(cos_v, static_cast<TReal>(v));
-    return static_cast<qreal>(cos_v);
-#else
-#    ifdef QT_USE_MATH_H_FLOATS
-        if (sizeof(qreal) == sizeof(float))
-            return cosf(float(v));
-        else
-#    endif
-            return cos(v);
+#ifdef QT_USE_MATH_H_FLOATS
+    if (sizeof(qreal) == sizeof(float))
+        return cosf(float(v));
+    else
 #endif
+        return cos(v);
 }
 
 inline qreal qTan(qreal v)
 {
-#ifdef Q_OS_SYMBIAN
-    TReal tan_v;
-    Math::Tan(tan_v, static_cast<TReal>(v));
-    return static_cast<qreal>(tan_v);
-#else
-#    ifdef QT_USE_MATH_H_FLOATS
-        if (sizeof(qreal) == sizeof(float))
-            return tanf(float(v));
-        else
-#    endif
-            return tan(v);
+#ifdef QT_USE_MATH_H_FLOATS
+    if (sizeof(qreal) == sizeof(float))
+        return tanf(float(v));
+    else
 #endif
+        return tan(v);
 }
 
 inline qreal qAcos(qreal v)
 {
-#ifdef Q_OS_SYMBIAN
-    TReal acos_v;
-    Math::ACos(acos_v, static_cast<TReal>(v));
-    return static_cast<qreal>(acos_v);
-#else
-#    ifdef QT_USE_MATH_H_FLOATS
-        if (sizeof(qreal) == sizeof(float))
-            return acosf(float(v));
-        else
-#    endif
-           return acos(v);
+#ifdef QT_USE_MATH_H_FLOATS
+    if (sizeof(qreal) == sizeof(float))
+        return acosf(float(v));
+    else
 #endif
+       return acos(v);
 }
 
 inline qreal qAsin(qreal v)
 {
-#ifdef Q_OS_SYMBIAN
-    TReal asin_v;
-    Math::ASin(asin_v, static_cast<TReal>(v));
-    return static_cast<qreal>(asin_v);
-#else
-#    ifdef QT_USE_MATH_H_FLOATS
-        if (sizeof(qreal) == sizeof(float))
-            return asinf(float(v));
-        else
-#    endif
-            return asin(v);
+#ifdef QT_USE_MATH_H_FLOATS
+    if (sizeof(qreal) == sizeof(float))
+        return asinf(float(v));
+    else
 #endif
+        return asin(v);
 }
 
 inline qreal qAtan(qreal v)
 {
-#ifdef Q_OS_SYMBIAN
-    TReal atan_v;
-    Math::ATan(atan_v, static_cast<TReal>(v));
-    return static_cast<qreal>(atan_v);
-#else
-#    ifdef QT_USE_MATH_H_FLOATS
-        if(sizeof(qreal) == sizeof(float))
-            return atanf(float(v));
-        else
-#    endif
-            return atan(v);
+#ifdef QT_USE_MATH_H_FLOATS
+    if (sizeof(qreal) == sizeof(float))
+        return atanf(float(v));
+    else
 #endif
+        return atan(v);
 }
 
-inline qreal qAtan2(qreal x, qreal y)
+inline qreal qAtan2(qreal y, qreal x)
 {
-#ifdef Q_OS_SYMBIAN
-    TReal atan2_v;
-    Math::ATan(atan2_v, static_cast<TReal>(x), static_cast<TReal>(y));
-    return static_cast<qreal>(atan2_v);
-#else
-#    ifdef QT_USE_MATH_H_FLOATS
-        if(sizeof(qreal) == sizeof(float))
-            return atan2f(float(x), float(y));
-        else
-#    endif
-            return atan2(x, y);
+#ifdef QT_USE_MATH_H_FLOATS
+    if (sizeof(qreal) == sizeof(float))
+        return atan2f(float(y), float(x));
+    else
 #endif
+        return atan2(y, x);
 }
 
 inline qreal qSqrt(qreal v)
 {
-#ifdef Q_OS_SYMBIAN
-    TReal sqrt_v;
-    Math::Sqrt(sqrt_v, static_cast<TReal>(v));
-    return static_cast<qreal>(sqrt_v);
-#else
-#    ifdef QT_USE_MATH_H_FLOATS
-        if (sizeof(qreal) == sizeof(float))
-            return sqrtf(float(v));
-        else
-#    endif
-            return sqrt(v);
+#ifdef QT_USE_MATH_H_FLOATS
+    if (sizeof(qreal) == sizeof(float))
+        return sqrtf(float(v));
+    else
 #endif
+        return sqrt(v);
 }
 
 inline qreal qLn(qreal v)
@@ -230,35 +179,71 @@ inline qreal qLn(qreal v)
 
 inline qreal qExp(qreal v)
 {
-#ifdef Q_OS_SYMBIAN
-    TReal exp_v;
-    Math::Exp(exp_v, static_cast<TReal>(v));
-    return static_cast<qreal>(exp_v);
-#else
     // only one signature
     // exists, exp(double)
     return exp(v);
-#endif
 }
 
 inline qreal qPow(qreal x, qreal y)
 {
-#ifdef Q_OS_SYMBIAN
-    TReal pow_v;
-    Math::Pow(pow_v, static_cast<TReal>(x), static_cast<TReal>(y));
-    return static_cast<qreal>(pow_v);
-#else
-#    ifdef QT_USE_MATH_H_FLOATS
-        if (sizeof(qreal) == sizeof(float))
-            return powf(float(x), float(y));
-        else
-#    endif
-            return pow(x, y);
+#ifdef QT_USE_MATH_H_FLOATS
+    if (sizeof(qreal) == sizeof(float))
+        return powf(float(x), float(y));
+    else
 #endif
+        return pow(x, y);
 }
+
+#ifndef M_E
+#define M_E (2.7182818284590452354)
+#endif
+
+#ifndef M_LOG2E
+#define M_LOG2E (1.4426950408889634074)
+#endif
+
+#ifndef M_LOG10E
+#define M_LOG10E (0.43429448190325182765)
+#endif
+
+#ifndef M_LN2
+#define M_LN2 (0.69314718055994530942)
+#endif
+
+#ifndef M_LN10
+#define M_LN10 (2.30258509299404568402)
+#endif
 
 #ifndef M_PI
 #define M_PI (3.14159265358979323846)
+#endif
+
+#ifndef M_PI_2
+#define M_PI_2 (1.57079632679489661923)
+#endif
+
+#ifndef M_PI_4
+#define M_PI_4 (0.78539816339744830962)
+#endif
+
+#ifndef M_1_PI
+#define M_1_PI (0.31830988618379067154)
+#endif
+
+#ifndef M_2_PI
+#define M_2_PI (0.63661977236758134308)
+#endif
+
+#ifndef M_2_SQRTPI
+#define M_2_SQRTPI (1.12837916709551257390)
+#endif
+
+#ifndef M_SQRT2
+#define M_SQRT2 (1.41421356237309504880)
+#endif
+
+#ifndef M_SQRT1_2
+#define M_SQRT1_2 (0.70710678118654752440)
 #endif
 
 inline qreal qFastSin(qreal x)
@@ -281,8 +266,26 @@ inline qreal qFastCos(qreal x)
     return qt_sine_table[si] - (qt_sine_table[ci] + 0.5 * qt_sine_table[si] * d) * d;
 }
 
-QT_END_NAMESPACE
+Q_DECL_CONSTEXPR inline float qDegreesToRadians(float degrees)
+{
+    return degrees * float(M_PI/180);
+}
 
-QT_END_HEADER
+Q_DECL_CONSTEXPR inline double qDegreesToRadians(double degrees)
+{
+    return degrees * (M_PI / 180);
+}
+
+Q_DECL_CONSTEXPR inline float qRadiansToDegrees(float radians)
+{
+    return radians * float(180/M_PI);
+}
+
+Q_DECL_CONSTEXPR inline double qRadiansToDegrees(double radians)
+{
+    return radians * (180 / M_PI);
+}
+
+QT_END_NAMESPACE
 
 #endif // QMATH_H

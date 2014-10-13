@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtGui module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -46,11 +46,8 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qdatastream.h>
 
-QT_BEGIN_HEADER
-
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Gui)
 
 template <int N, int M, typename T>
 class QGenericMatrix
@@ -103,7 +100,7 @@ private:
 #endif
     T m[N][M];    // Column-major order to match OpenGL.
 
-    QGenericMatrix(int) {}       // Construct without initializing identity matrix.
+    explicit QGenericMatrix(int) {}       // Construct without initializing identity matrix.
 
 #if !defined(Q_NO_TEMPLATE_FRIENDS)
     template <int NN, int MM, typename TT>
@@ -337,14 +334,14 @@ Q_OUTOFLINE_TEMPLATE void QGenericMatrix<N, M, T>::copyDataTo(T *values) const
 }
 
 // Define aliases for the useful variants of QGenericMatrix.
-typedef QGenericMatrix<2, 2, qreal> QMatrix2x2;
-typedef QGenericMatrix<2, 3, qreal> QMatrix2x3;
-typedef QGenericMatrix<2, 4, qreal> QMatrix2x4;
-typedef QGenericMatrix<3, 2, qreal> QMatrix3x2;
-typedef QGenericMatrix<3, 3, qreal> QMatrix3x3;
-typedef QGenericMatrix<3, 4, qreal> QMatrix3x4;
-typedef QGenericMatrix<4, 2, qreal> QMatrix4x2;
-typedef QGenericMatrix<4, 3, qreal> QMatrix4x3;
+typedef QGenericMatrix<2, 2, float> QMatrix2x2;
+typedef QGenericMatrix<2, 3, float> QMatrix2x3;
+typedef QGenericMatrix<2, 4, float> QMatrix2x4;
+typedef QGenericMatrix<3, 2, float> QMatrix3x2;
+typedef QGenericMatrix<3, 3, float> QMatrix3x3;
+typedef QGenericMatrix<3, 4, float> QMatrix3x4;
+typedef QGenericMatrix<4, 2, float> QMatrix4x2;
+typedef QGenericMatrix<4, 3, float> QMatrix4x3;
 
 #ifndef QT_NO_DEBUG_STREAM
 
@@ -401,7 +398,5 @@ Q_DECLARE_METATYPE(QMatrix3x3)
 Q_DECLARE_METATYPE(QMatrix3x4)
 Q_DECLARE_METATYPE(QMatrix4x2)
 Q_DECLARE_METATYPE(QMatrix4x3)
-
-QT_END_HEADER
 
 #endif

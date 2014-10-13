@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -48,17 +48,12 @@
 #include <QtCore/qregexp.h>
 #include <QtCore/qstring.h>
 #include <QtCore/qstringmatcher.h>
-#ifdef QT_INCLUDE_COMPAT
-#include <Qt3Support/q3valuelist.h>
-#endif
-
-QT_BEGIN_HEADER
 
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
 
 class QRegExp;
+class QRegularExpression;
 
 typedef QListIterator<QString> QStringListIterator;
 typedef QMutableListIterator<QString> QMutableStringListIterator;
@@ -74,13 +69,14 @@ public:
     inline QStringList(std::initializer_list<QString> args) : QList<QString>(args) { }
 #endif
 
-    inline void sort();
+    inline void sort(Qt::CaseSensitivity cs = Qt::CaseSensitive);
     inline int removeDuplicates();
 
     inline QString join(const QString &sep) const;
+    inline QString join(QChar sep) const;
 
     inline QStringList filter(const QString &str, Qt::CaseSensitivity cs = Qt::CaseSensitive) const;
-    inline QBool contains(const QString &str, Qt::CaseSensitivity cs = Qt::CaseSensitive) const;
+    inline bool contains(const QString &str, Qt::CaseSensitivity cs = Qt::CaseSensitive) const;
 
     inline QStringList &replaceInStrings(const QString &before, const QString &after, Qt::CaseSensitivity cs = Qt::CaseSensitive);
 
@@ -99,6 +95,16 @@ public:
     inline int indexOf(QRegExp &rx, int from = 0) const;
     inline int lastIndexOf(QRegExp &rx, int from = -1) const;
 #endif
+
+#ifndef QT_BOOTSTRAPPED
+#ifndef QT_NO_REGULAREXPRESSION
+    inline QStringList filter(const QRegularExpression &re) const;
+    inline QStringList &replaceInStrings(const QRegularExpression &re, const QString &after);
+    inline int indexOf(const QRegularExpression &re, int from = 0) const;
+    inline int lastIndexOf(const QRegularExpression &re, int from = -1) const;
+#endif // QT_NO_REGULAREXPRESSION
+#endif // QT_BOOTSTRAPPED
+
 #if !defined(Q_NO_USING_KEYWORD)
     using QList<QString>::indexOf;
     using QList<QString>::lastIndexOf;
@@ -108,34 +114,18 @@ public:
     inline int lastIndexOf(const QString &str, int from = -1) const
     { return QList<QString>::lastIndexOf(str, from); }
 #endif
-#ifdef QT3_SUPPORT
-    static inline QT3_SUPPORT QStringList split(const QString &sep, const QString &str, bool allowEmptyEntries = false);
-    static inline QT3_SUPPORT QStringList split(const QChar &sep, const QString &str, bool allowEmptyEntries = false);
-    inline QT3_SUPPORT QStringList grep(const QString &str, bool cs = true) const
-        { return filter(str, cs ? Qt::CaseSensitive : Qt::CaseInsensitive); }
-
-#ifndef QT_NO_REGEXP
-    static inline QT3_SUPPORT QStringList split(const QRegExp &sep, const QString &str, bool allowEmptyEntries = false);
-    inline QT3_SUPPORT QStringList grep(const QRegExp &rx) const { return filter(rx); }
-    inline QT3_SUPPORT QStringList &gres(const QRegExp &rx, const QString &after)
-        { return replaceInStrings(rx, after); }
-#endif
-    inline QT3_SUPPORT QStringList &gres(const QString &before, const QString &after, bool cs = true)
-        { return replaceInStrings(before, after, cs ? Qt::CaseSensitive : Qt::CaseInsensitive); }
-
-    inline Iterator QT3_SUPPORT fromLast() { return (isEmpty() ? end() : --end()); }
-    inline ConstIterator QT3_SUPPORT fromLast() const { return (isEmpty() ? end() : --end()); }
-#endif
 };
 
+Q_DECLARE_TYPEINFO(QStringList, Q_MOVABLE_TYPE);
+
 namespace QtPrivate {
-    void Q_CORE_EXPORT QStringList_sort(QStringList *that);
+    void Q_CORE_EXPORT QStringList_sort(QStringList *that, Qt::CaseSensitivity cs);
     int Q_CORE_EXPORT QStringList_removeDuplicates(QStringList *that);
-    QString Q_CORE_EXPORT QStringList_join(const QStringList *that, const QString &sep);
+    QString Q_CORE_EXPORT QStringList_join(const QStringList *that, const QChar *sep, int seplen);
     QStringList Q_CORE_EXPORT QStringList_filter(const QStringList *that, const QString &str,
                                                Qt::CaseSensitivity cs);
 
-    QBool Q_CORE_EXPORT QStringList_contains(const QStringList *that, const QString &str, Qt::CaseSensitivity cs);
+    bool Q_CORE_EXPORT QStringList_contains(const QStringList *that, const QString &str, Qt::CaseSensitivity cs);
     void Q_CORE_EXPORT QStringList_replaceInStrings(QStringList *that, const QString &before, const QString &after,
                                       Qt::CaseSensitivity cs);
 
@@ -147,11 +137,20 @@ namespace QtPrivate {
     int Q_CORE_EXPORT QStringList_indexOf(const QStringList *that, QRegExp &rx, int from);
     int Q_CORE_EXPORT QStringList_lastIndexOf(const QStringList *that, QRegExp &rx, int from);
 #endif
+
+#ifndef QT_BOOTSTRAPPED
+#ifndef QT_NO_REGULAREXPRESSION
+    void Q_CORE_EXPORT QStringList_replaceInStrings(QStringList *that, const QRegularExpression &rx, const QString &after);
+    QStringList Q_CORE_EXPORT QStringList_filter(const QStringList *that, const QRegularExpression &re);
+    int Q_CORE_EXPORT QStringList_indexOf(const QStringList *that, const QRegularExpression &re, int from);
+    int Q_CORE_EXPORT QStringList_lastIndexOf(const QStringList *that, const QRegularExpression &re, int from);
+#endif // QT_NO_REGULAREXPRESSION
+#endif // QT_BOOTSTRAPPED
 }
 
-inline void QStringList::sort()
+inline void QStringList::sort(Qt::CaseSensitivity cs)
 {
-    QtPrivate::QStringList_sort(this);
+    QtPrivate::QStringList_sort(this, cs);
 }
 
 inline int QStringList::removeDuplicates()
@@ -161,7 +160,12 @@ inline int QStringList::removeDuplicates()
 
 inline QString QStringList::join(const QString &sep) const
 {
-    return QtPrivate::QStringList_join(this, sep);
+    return QtPrivate::QStringList_join(this, sep.constData(), sep.length());
+}
+
+inline QString QStringList::join(QChar sep) const
+{
+    return QtPrivate::QStringList_join(this, &sep, 1);
 }
 
 inline QStringList QStringList::filter(const QString &str, Qt::CaseSensitivity cs) const
@@ -169,7 +173,7 @@ inline QStringList QStringList::filter(const QString &str, Qt::CaseSensitivity c
     return QtPrivate::QStringList_filter(this, str, cs);
 }
 
-inline QBool QStringList::contains(const QString &str, Qt::CaseSensitivity cs) const
+inline bool QStringList::contains(const QString &str, Qt::CaseSensitivity cs) const
 {
     return QtPrivate::QStringList_contains(this, str, cs);
 }
@@ -213,36 +217,30 @@ inline int QStringList::lastIndexOf(QRegExp &rx, int from) const
 }
 #endif
 
-
-#ifdef QT3_SUPPORT
-inline QStringList QStringList::split(const QChar &sep, const QString &str, bool allowEmptyEntries)
+#ifndef QT_BOOTSTRAPPED
+#ifndef QT_NO_REGULAREXPRESSION
+inline QStringList &QStringList::replaceInStrings(const QRegularExpression &rx, const QString &after)
 {
-    if (str.isEmpty())
-        return QStringList();
-    return str.split(sep, allowEmptyEntries ? QString::KeepEmptyParts
-                                            : QString::SkipEmptyParts);
+    QtPrivate::QStringList_replaceInStrings(this, rx, after);
+    return *this;
 }
 
-inline QStringList QStringList::split(const QString &sep, const QString &str, bool allowEmptyEntries)
+inline QStringList QStringList::filter(const QRegularExpression &rx) const
 {
-    if (str.isEmpty())
-        return QStringList();
-    return str.split(sep, allowEmptyEntries ? QString::KeepEmptyParts
-                                            : QString::SkipEmptyParts);
+    return QtPrivate::QStringList_filter(this, rx);
 }
 
-#ifndef QT_NO_REGEXP
-inline QStringList QStringList::split(const QRegExp &sep, const QString &str, bool allowEmptyEntries)
+inline int QStringList::indexOf(const QRegularExpression &rx, int from) const
 {
-    if (str.isEmpty())
-        return QStringList();
-    return str.split(sep, allowEmptyEntries ? QString::KeepEmptyParts
-                                            : QString::SkipEmptyParts);
+    return QtPrivate::QStringList_indexOf(this, rx, from);
 }
-#endif // QT_NO_REGEXP
 
-#endif // QT3_SUPPORT
-
+inline int QStringList::lastIndexOf(const QRegularExpression &rx, int from) const
+{
+    return QtPrivate::QStringList_lastIndexOf(this, rx, from);
+}
+#endif // QT_NO_REGULAREXPRESSION
+#endif // QT_BOOTSTRAPPED
 
 #ifndef QT_NO_DATASTREAM
 inline QDataStream &operator>>(QDataStream &in, QStringList &list)
@@ -256,7 +254,5 @@ inline QDataStream &operator<<(QDataStream &out, const QStringList &list)
 #endif // QT_NO_DATASTREAM
 
 QT_END_NAMESPACE
-
-QT_END_HEADER
 
 #endif // QSTRINGLIST_H

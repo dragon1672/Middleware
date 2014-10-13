@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -42,71 +42,83 @@
 #ifndef QHASH_H
 #define QHASH_H
 
-#include <QtCore/qatomic.h>
 #include <QtCore/qchar.h>
 #include <QtCore/qiterator.h>
 #include <QtCore/qlist.h>
 #include <QtCore/qpair.h>
+#include <QtCore/qrefcount.h>
 
-QT_BEGIN_HEADER
+#ifdef Q_COMPILER_INITIALIZER_LISTS
+#include <initializer_list>
+#endif
+
+#if defined(Q_CC_MSVC)
+#pragma warning( push )
+#pragma warning( disable : 4311 ) // disable pointer truncation warning
+#pragma warning( disable : 4127 ) // conditional expression is constant
+#endif
 
 QT_BEGIN_NAMESPACE
-
-QT_MODULE(Core)
 
 class QBitArray;
 class QByteArray;
 class QString;
 class QStringRef;
+class QLatin1String;
 
-inline uint qHash(char key) { return uint(key); }
-inline uint qHash(uchar key) { return uint(key); }
-inline uint qHash(signed char key) { return uint(key); }
-inline uint qHash(ushort key) { return uint(key); }
-inline uint qHash(short key) { return uint(key); }
-inline uint qHash(uint key) { return key; }
-inline uint qHash(int key) { return uint(key); }
-inline uint qHash(ulong key)
+inline uint qHash(char key, uint seed = 0) Q_DECL_NOTHROW { return uint(key) ^ seed; }
+inline uint qHash(uchar key, uint seed = 0) Q_DECL_NOTHROW { return uint(key) ^ seed; }
+inline uint qHash(signed char key, uint seed = 0) Q_DECL_NOTHROW { return uint(key) ^ seed; }
+inline uint qHash(ushort key, uint seed = 0) Q_DECL_NOTHROW { return uint(key) ^ seed; }
+inline uint qHash(short key, uint seed = 0) Q_DECL_NOTHROW { return uint(key) ^ seed; }
+inline uint qHash(uint key, uint seed = 0) Q_DECL_NOTHROW { return key ^ seed; }
+inline uint qHash(int key, uint seed = 0) Q_DECL_NOTHROW { return uint(key) ^ seed; }
+inline uint qHash(ulong key, uint seed = 0) Q_DECL_NOTHROW
 {
     if (sizeof(ulong) > sizeof(uint)) {
-        return uint(((key >> (8 * sizeof(uint) - 1)) ^ key) & (~0U));
+        return uint(((key >> (8 * sizeof(uint) - 1)) ^ key) & (~0U)) ^ seed;
     } else {
-        return uint(key & (~0U));
+        return uint(key & (~0U)) ^ seed;
     }
 }
-inline uint qHash(long key) { return qHash(ulong(key)); }
-inline uint qHash(quint64 key)
+inline uint qHash(long key, uint seed = 0) Q_DECL_NOTHROW { return qHash(ulong(key), seed); }
+inline uint qHash(quint64 key, uint seed = 0) Q_DECL_NOTHROW
 {
     if (sizeof(quint64) > sizeof(uint)) {
-        return uint(((key >> (8 * sizeof(uint) - 1)) ^ key) & (~0U));
+        return uint(((key >> (8 * sizeof(uint) - 1)) ^ key) & (~0U)) ^ seed;
     } else {
-        return uint(key & (~0U));
+        return uint(key & (~0U)) ^ seed;
     }
 }
-inline uint qHash(qint64 key) { return qHash(quint64(key)); }
-inline uint qHash(QChar key) { return qHash(key.unicode()); }
-Q_CORE_EXPORT uint qHash(const QByteArray &key);
-Q_CORE_EXPORT uint qHash(const QString &key);
-Q_CORE_EXPORT uint qHash(const QStringRef &key);
-Q_CORE_EXPORT uint qHash(const QBitArray &key);
-
-#if defined(Q_CC_MSVC)
-#pragma warning( push )
-#pragma warning( disable : 4311 ) // disable pointer truncation warning
+inline uint qHash(qint64 key, uint seed = 0) Q_DECL_NOTHROW { return qHash(quint64(key), seed); }
+Q_CORE_EXPORT uint qHash(float key, uint seed = 0) Q_DECL_NOTHROW;
+Q_CORE_EXPORT uint qHash(double key, uint seed = 0) Q_DECL_NOTHROW;
+#ifndef Q_OS_DARWIN
+Q_CORE_EXPORT uint qHash(long double key, uint seed = 0) Q_DECL_NOTHROW;
 #endif
-template <class T> inline uint qHash(const T *key)
+inline uint qHash(QChar key, uint seed = 0) Q_DECL_NOTHROW { return qHash(key.unicode(), seed); }
+Q_CORE_EXPORT uint qHash(const QByteArray &key, uint seed = 0) Q_DECL_NOTHROW;
+Q_CORE_EXPORT uint qHash(const QString &key, uint seed = 0) Q_DECL_NOTHROW;
+Q_CORE_EXPORT uint qHash(const QStringRef &key, uint seed = 0) Q_DECL_NOTHROW;
+Q_CORE_EXPORT uint qHash(const QBitArray &key, uint seed = 0) Q_DECL_NOTHROW;
+Q_CORE_EXPORT uint qHash(QLatin1String key, uint seed = 0) Q_DECL_NOTHROW;
+Q_CORE_EXPORT uint qt_hash(const QString &key) Q_DECL_NOTHROW;
+Q_CORE_EXPORT uint qt_hash(const QStringRef &key) Q_DECL_NOTHROW;
+
+template <class T> inline uint qHash(const T *key, uint seed = 0) Q_DECL_NOTHROW
 {
-    return qHash(reinterpret_cast<quintptr>(key));
+    return qHash(reinterpret_cast<quintptr>(key), seed);
 }
-#if defined(Q_CC_MSVC)
-#pragma warning( pop )
-#endif
+template<typename T> inline uint qHash(const T &t, uint seed)
+    Q_DECL_NOEXCEPT_EXPR(noexcept(qHash(t)))
+{ return (qHash(t) ^ seed); }
 
-template <typename T1, typename T2> inline uint qHash(const QPair<T1, T2> &key)
+template <typename T1, typename T2> inline uint qHash(const QPair<T1, T2> &key, uint seed = 0)
+    Q_DECL_NOEXCEPT_EXPR(noexcept(qHash(key.first, seed)) && noexcept(qHash(key.second, seed)))
 {
-    uint h1 = qHash(key.first);
-    uint h2 = qHash(key.second);
-    return ((h1 << 16) | (h1 >> 16)) ^ h2;
+    uint h1 = qHash(key.first, seed);
+    uint h2 = qHash(key.second, seed);
+    return ((h1 << 16) | (h1 >> 16)) ^ h2 ^ seed;
 }
 
 struct Q_CORE_EXPORT QHashData
@@ -118,28 +130,25 @@ struct Q_CORE_EXPORT QHashData
 
     Node *fakeNext;
     Node **buckets;
-    QBasicAtomicInt ref;
+    QtPrivate::RefCount ref;
     int size;
     int nodeSize;
     short userNumBits;
     short numBits;
     int numBuckets;
+    uint seed;
     uint sharable : 1;
     uint strictAlignment : 1;
     uint reserved : 30;
 
-    void *allocateNode(); // ### Qt5 remove me
     void *allocateNode(int nodeAlign);
     void freeNode(void *node);
-    QHashData *detach_helper(void (*node_duplicate)(Node *, void *), int nodeSize); // ### Qt5 remove me
-    QHashData *detach_helper2(void (*node_duplicate)(Node *, void *), void (*node_delete)(Node *),
-                              int nodeSize, int nodeAlign);
-    void mightGrow();
+    QHashData *detach_helper(void (*node_duplicate)(Node *, void *), void (*node_delete)(Node *),
+                             int nodeSize, int nodeAlign);
     bool willGrow();
     void hasShrunk();
     void rehash(int hint);
     void free_helper(void (*node_delete)(Node *));
-    void destroyAndFree(); // ### Qt5 remove me
     Node *firstNode();
 #ifdef QT_QHASH_DEBUG
     void dump();
@@ -148,14 +157,8 @@ struct Q_CORE_EXPORT QHashData
     static Node *nextNode(Node *node);
     static Node *previousNode(Node *node);
 
-    static QHashData shared_null;
+    static const QHashData shared_null;
 };
-
-inline void QHashData::mightGrow() // ### Qt 5: eliminate
-{
-    if (size >= numBuckets)
-        rehash(numBits + 1);
-}
 
 inline bool QHashData::willGrow()
 {
@@ -203,29 +206,48 @@ inline bool operator==(const QHashDummyValue & /* v1 */, const QHashDummyValue &
 Q_DECLARE_TYPEINFO(QHashDummyValue, Q_MOVABLE_TYPE | Q_DUMMY_TYPE);
 
 template <class Key, class T>
-struct QHashDummyNode
-{
-    QHashDummyNode *next;
-    uint h;
-    Key key;
-
-    inline QHashDummyNode(const Key &key0) : key(key0) {}
-};
-
-template <class Key, class T>
 struct QHashNode
 {
     QHashNode *next;
-    uint h;
-    Key key;
+    const uint h;
+    const Key key;
     T value;
 
-    inline QHashNode(const Key &key0) : key(key0) {} // ### remove in 5.0
-    inline QHashNode(const Key &key0, const T &value0) : key(key0), value(value0) {}
-    inline bool same_key(uint h0, const Key &key0) { return h0 == h && key0 == key; }
+    inline QHashNode(const Key &key0, const T &value0, uint hash, QHashNode *n)
+        : next(n), h(hash), key(key0), value(value0) {}
+    inline bool same_key(uint h0, const Key &key0) const { return h0 == h && key0 == key; }
+
+private:
+    Q_DISABLE_COPY(QHashNode)
+};
+
+template <class Key, class T>
+struct QHashDummyNode
+{
+    QHashNode<Key, T> *next;
+    const uint h;
+    const Key key;
+
+    inline QHashDummyNode(const Key &key0, uint hash, QHashNode<Key, T> *n) : next(n), h(hash), key(key0) {}
+
+private:
+    Q_DISABLE_COPY(QHashDummyNode)
 };
 
 
+#if 0
+// ###
+// The introduction of the QHash random seed breaks this optimization, as it
+// relies on qHash(int i) = i. If the hash value is salted, then the hash
+// table becomes corrupted.
+//
+// A bit more research about whether it makes sense or not to salt integer
+// keys (and in general keys whose hash value is easy to invert)
+// is needed, or about how keep this optimization and the seed (f.i. by
+// specializing QHash for integer values, and re-apply the seed during lookup).
+//
+// Be aware that such changes can easily be binary incompatible, and therefore
+// cannot be made during the Qt 5 lifetime.
 #define Q_HASH_DECLARE_INT_NODES(key_type) \
     template <class T> \
     struct QHashDummyNode<key_type, T> { \
@@ -243,7 +265,7 @@ struct QHashNode
 \
         inline QHashNode(key_type /* key0 */) {} \
         inline QHashNode(key_type /* key0 */, const T &value0) : value(value0) {} \
-        inline bool same_key(uint h0, key_type) { return h0 == h; } \
+        inline bool same_key(uint h0, key_type) const { return h0 == h; } \
     }
 
 #if defined(Q_BYTE_ORDER) && Q_BYTE_ORDER == Q_LITTLE_ENDIAN
@@ -253,6 +275,7 @@ Q_HASH_DECLARE_INT_NODES(ushort);
 Q_HASH_DECLARE_INT_NODES(int);
 Q_HASH_DECLARE_INT_NODES(uint);
 #undef Q_HASH_DECLARE_INT_NODES
+#endif // #if 0
 
 template <class Key, class T>
 class QHash
@@ -269,21 +292,26 @@ class QHash
         return reinterpret_cast<Node *>(node);
     }
 
-#ifdef Q_ALIGNOF
     static inline int alignOfNode() { return qMax<int>(sizeof(void*), Q_ALIGNOF(Node)); }
     static inline int alignOfDummyNode() { return qMax<int>(sizeof(void*), Q_ALIGNOF(DummyNode)); }
-#else
-    static inline int alignOfNode() { return 0; }
-    static inline int alignOfDummyNode() { return 0; }
-#endif
 
 public:
-    inline QHash() : d(&QHashData::shared_null) { d->ref.ref(); }
+    inline QHash() : d(const_cast<QHashData *>(&QHashData::shared_null)) { }
+#ifdef Q_COMPILER_INITIALIZER_LISTS
+    inline QHash(std::initializer_list<std::pair<Key,T> > list)
+        : d(const_cast<QHashData *>(&QHashData::shared_null))
+    {
+        reserve(list.size());
+        for (typename std::initializer_list<std::pair<Key,T> >::const_iterator it = list.begin(); it != list.end(); ++it)
+            insert(it->first, it->second);
+    }
+#endif
     inline QHash(const QHash<Key, T> &other) : d(other.d) { d->ref.ref(); if (!d->sharable) detach(); }
     inline ~QHash() { if (!d->ref.deref()) freeData(d); }
 
     QHash<Key, T> &operator=(const QHash<Key, T> &other);
 #ifdef Q_COMPILER_RVALUE_REFS
+    inline QHash(QHash<Key, T> &&other) : d(other.d) { other.d = const_cast<QHashData *>(&QHashData::shared_null); }
     inline QHash<Key, T> &operator=(QHash<Key, T> &&other)
     { qSwap(d, other.d); return *this; }
 #endif
@@ -300,9 +328,11 @@ public:
     void reserve(int size);
     inline void squeeze() { reserve(1); }
 
-    inline void detach() { if (d->ref != 1) detach_helper(); }
-    inline bool isDetached() const { return d->ref == 1; }
-    inline void setSharable(bool sharable) { if (!sharable) detach(); d->sharable = sharable; }
+    inline void detach() { if (d->ref.isShared()) detach_helper(); }
+    inline bool isDetached() const { return !d->ref.isShared(); }
+#if QT_SUPPORTS(UNSHARABLE_CONTAINERS)
+    inline void setSharable(bool sharable) { if (!sharable) detach(); if (d != &QHashData::shared_null) d->sharable = sharable; }
+#endif
     inline bool isSharedWith(const QHash<Key, T> &other) const { return d == other.d; }
 
     void clear();
@@ -330,6 +360,7 @@ public:
     class iterator
     {
         friend class const_iterator;
+        friend class QHash<Key, T>;
         QHashData::Node *i;
 
     public:
@@ -339,8 +370,6 @@ public:
         typedef T *pointer;
         typedef T &reference;
 
-        // ### Qt 5: get rid of 'operator Node *'
-        inline operator Node *() const { return concrete(i); }
         inline iterator() : i(0) { }
         explicit inline iterator(void *node) : i(reinterpret_cast<QHashData::Node *>(node)) { }
 
@@ -375,20 +404,13 @@ public:
         inline iterator &operator+=(int j) { return *this = *this + j; }
         inline iterator &operator-=(int j) { return *this = *this - j; }
 
-        // ### Qt 5: not sure this is necessary anymore
-#ifdef QT_STRICT_ITERATORS
-    private:
-#else
+#ifndef QT_STRICT_ITERATORS
     public:
-#endif
         inline bool operator==(const const_iterator &o) const
             { return i == o.i; }
         inline bool operator!=(const const_iterator &o) const
             { return i != o.i; }
-
-    private:
-        // ### Qt 5: remove
-        inline operator bool() const { return false; }
+#endif
     };
     friend class iterator;
 
@@ -404,8 +426,6 @@ public:
         typedef const T *pointer;
         typedef const T &reference;
 
-        // ### Qt 5: get rid of 'operator Node *'
-        inline operator Node *() const { return concrete(i); }
         inline const_iterator() : i(0) { }
         explicit inline const_iterator(void *node)
             : i(reinterpret_cast<QHashData::Node *>(node)) { }
@@ -453,19 +473,17 @@ public:
         inline bool operator==(const iterator &o) const { return operator==(const_iterator(o)); }
         inline bool operator!=(const iterator &o) const { return operator!=(const_iterator(o)); }
 #endif
-
-    private:
-        // ### Qt 5: remove
-        inline operator bool() const { return false; }
     };
     friend class const_iterator;
 
     // STL style
     inline iterator begin() { detach(); return iterator(d->firstNode()); }
     inline const_iterator begin() const { return const_iterator(d->firstNode()); }
+    inline const_iterator cbegin() const { return const_iterator(d->firstNode()); }
     inline const_iterator constBegin() const { return const_iterator(d->firstNode()); }
     inline iterator end() { detach(); return iterator(e); }
     inline const_iterator end() const { return const_iterator(e); }
+    inline const_iterator cend() const { return const_iterator(e); }
     inline const_iterator constEnd() const { return const_iterator(e); }
     iterator erase(iterator it);
 
@@ -502,6 +520,20 @@ private:
     static void deleteNode2(QHashData::Node *node);
 
     static void duplicateNode(QHashData::Node *originalNode, void *newNode);
+
+    bool isValidIterator(const iterator &it) const
+    {
+#if defined(QT_DEBUG) && !defined(Q_HASH_NO_ITERATOR_DEBUG)
+        QHashData::Node *node = it.i;
+        while (node->next)
+            node = node->next;
+        return (static_cast<void *>(node) == d);
+#else
+        Q_UNUSED(it);
+        return true;
+#endif
+    }
+    friend class QSet<Key>;
 };
 
 
@@ -527,9 +559,9 @@ Q_INLINE_TEMPLATE void QHash<Key, T>::duplicateNode(QHashData::Node *node, void 
 {
     Node *concreteNode = concrete(node);
     if (QTypeInfo<T>::isDummy) {
-        (void) new (newNode) DummyNode(concreteNode->key);
+        (void) new (newNode) DummyNode(concreteNode->key, concreteNode->h, 0);
     } else {
-        (void) new (newNode) Node(concreteNode->key, concreteNode->value);
+        (void) new (newNode) Node(concreteNode->key, concreteNode->value, concreteNode->h, 0);
     }
 }
 
@@ -540,13 +572,11 @@ QHash<Key, T>::createNode(uint ah, const Key &akey, const T &avalue, Node **anex
     Node *node;
 
     if (QTypeInfo<T>::isDummy) {
-        node = reinterpret_cast<Node *>(new (d->allocateNode(alignOfDummyNode())) DummyNode(akey));
+        node = reinterpret_cast<Node *>(new (d->allocateNode(alignOfDummyNode())) DummyNode(akey, ah, *anextNode));
     } else {
-        node = new (d->allocateNode(alignOfNode())) Node(akey, avalue);
+        node = new (d->allocateNode(alignOfNode())) Node(akey, avalue, ah, *anextNode);
     }
 
-    node->h = ah;
-    node->next = *anextNode;
     *anextNode = node;
     ++d->size;
     return node;
@@ -579,7 +609,7 @@ Q_INLINE_TEMPLATE void QHash<Key, T>::clear()
 template <class Key, class T>
 Q_OUTOFLINE_TEMPLATE void QHash<Key, T>::detach_helper()
 {
-    QHashData *x = d->detach_helper2(duplicateNode, deleteNode2,
+    QHashData *x = d->detach_helper(duplicateNode, deleteNode2,
         QTypeInfo<T>::isDummy ? sizeof(DummyNode) : sizeof(Node),
         QTypeInfo<T>::isDummy ? alignOfDummyNode() : alignOfNode());
     if (!d->ref.deref())
@@ -826,13 +856,31 @@ Q_OUTOFLINE_TEMPLATE T QHash<Key, T>::take(const Key &akey)
 template <class Key, class T>
 Q_OUTOFLINE_TEMPLATE typename QHash<Key, T>::iterator QHash<Key, T>::erase(iterator it)
 {
+    Q_ASSERT_X(isValidIterator(it), "QHash::erase", "The specified iterator argument 'it' is invalid");
+
     if (it == iterator(e))
         return it;
+
+    if (d->ref.isShared()) {
+        int bucketNum = (it.i->h % d->numBuckets);
+        iterator bucketIterator(*(d->buckets + bucketNum));
+        int stepsFromBucketStartToIte = 0;
+        while (bucketIterator != it) {
+            ++stepsFromBucketStartToIte;
+            ++bucketIterator;
+        }
+        detach();
+        it = iterator(*(d->buckets + bucketNum));
+        while (stepsFromBucketStartToIte > 0) {
+            --stepsFromBucketStartToIte;
+            ++it;
+        }
+    }
 
     iterator ret = it;
     ++ret;
 
-    Node *node = it;
+    Node *node = concrete(it.i);
     Node **node_ptr = reinterpret_cast<Node **>(&d->buckets[node->h % d->numBuckets]);
     while (*node_ptr != node)
         node_ptr = &(*node_ptr)->next;
@@ -879,8 +927,13 @@ Q_OUTOFLINE_TEMPLATE typename QHash<Key, T>::Node **QHash<Key, T>::findNode(cons
                                                                             uint *ahp) const
 {
     Node **node;
-    uint h = qHash(akey);
+    uint h = 0;
 
+    if (d->numBuckets || ahp) {
+        h = qHash(akey, d->seed);
+        if (ahp)
+            *ahp = h;
+    }
     if (d->numBuckets) {
         node = reinterpret_cast<Node **>(&d->buckets[h % d->numBuckets]);
         Q_ASSERT(*node == e || (*node)->next);
@@ -889,8 +942,6 @@ Q_OUTOFLINE_TEMPLATE typename QHash<Key, T>::Node **QHash<Key, T>::findNode(cons
     } else {
         node = const_cast<Node **>(reinterpret_cast<const Node * const *>(&e));
     }
-    if (ahp)
-        *ahp = h;
     return node;
 }
 
@@ -925,6 +976,14 @@ class QMultiHash : public QHash<Key, T>
 {
 public:
     QMultiHash() {}
+#ifdef Q_COMPILER_INITIALIZER_LISTS
+    inline QMultiHash(std::initializer_list<std::pair<Key,T> > list)
+    {
+        this->reserve(list.size());
+        for (typename std::initializer_list<std::pair<Key,T> >::const_iterator it = list.begin(); it != list.end(); ++it)
+            insert(it->first, it->second);
+    }
+#endif
     QMultiHash(const QHash<Key, T> &other) : QHash<Key, T>(other) {}
     inline void swap(QMultiHash<Key, T> &other) { QHash<Key, T>::swap(other); } // prevent QMultiHash<->QHash swaps
 
@@ -1038,6 +1097,8 @@ Q_DECLARE_MUTABLE_ASSOCIATIVE_ITERATOR(Hash)
 
 QT_END_NAMESPACE
 
-QT_END_HEADER
+#if defined(Q_CC_MSVC)
+#pragma warning( pop )
+#endif
 
 #endif // QHASH_H

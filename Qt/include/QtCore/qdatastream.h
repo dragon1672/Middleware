@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -44,17 +44,14 @@
 
 #include <QtCore/qscopedpointer.h>
 #include <QtCore/qiodevice.h>
-#include <QtCore/qglobal.h>
+#include <QtCore/qpair.h>
 
 #ifdef Status
 #error qdatastream.h must be included before any header file that defines Status
 #endif
 
-QT_BEGIN_HEADER
-
 QT_BEGIN_NAMESPACE
 
-QT_MODULE(Core)
 
 class QByteArray;
 class QIODevice;
@@ -86,10 +83,14 @@ public:
         Qt_4_5 = 11,
         Qt_4_6 = 12,
         Qt_4_7 = Qt_4_6,
-        Qt_4_8 = Qt_4_7
-#if QT_VERSION >= 0x040900
+        Qt_4_8 = Qt_4_7,
+        Qt_4_9 = Qt_4_8,
+        Qt_5_0 = 13,
+        Qt_5_1 = 14,
+        Qt_5_2 = 15,
+        Qt_5_3 = Qt_5_2
+#if QT_VERSION >= 0x050400
 #error Add the datastream version for this Qt version
-        Qt_4_9 = Qt_4_8
 #endif
     };
 
@@ -112,21 +113,15 @@ public:
 
     QDataStream();
     explicit QDataStream(QIODevice *);
-#ifdef QT3_SUPPORT
-    QDataStream(QByteArray *, int mode);
-#endif
     QDataStream(QByteArray *, QIODevice::OpenMode flags);
     QDataStream(const QByteArray &);
-    virtual ~QDataStream();
+    ~QDataStream();
 
     QIODevice *device() const;
     void setDevice(QIODevice *);
     void unsetDevice();
 
     bool atEnd() const;
-#ifdef QT3_SUPPORT
-    inline QT3_SUPPORT bool eof() const { return atEnd(); }
-#endif
 
     Status status() const;
     void setStatus(Status status);
@@ -175,15 +170,6 @@ public:
     int writeRawData(const char *, int len);
 
     int skipRawData(int len);
-
-#ifdef QT3_SUPPORT
-    inline QT3_SUPPORT QDataStream &readRawBytes(char *str, uint len)
-        { readRawData(str, static_cast<int>(len)); return *this; }
-    inline QT3_SUPPORT QDataStream &writeRawBytes(const char *str, uint len)
-        { writeRawData(str, static_cast<int>(len)); return *this; }
-    inline QT3_SUPPORT bool isPrintableData() const { return false; }
-    inline QT3_SUPPORT void setPrintableData(bool) {}
-#endif
 
 private:
     Q_DISABLE_COPY(QDataStream)
@@ -384,7 +370,7 @@ Q_OUTOFLINE_TEMPLATE QDataStream &operator<<(QDataStream &out, const QHash<Key, 
     }
     return out;
 }
-#ifdef qdoc
+#ifdef Q_QDOC
 template <class Key, class T>
 Q_OUTOFLINE_TEMPLATE QDataStream &operator>>(QDataStream &in, QMap<Key, T> &map)
 #else
@@ -400,7 +386,6 @@ Q_OUTOFLINE_TEMPLATE QDataStream &operator>>(QDataStream &in, QMap<aKey, aT> &ma
     in >> n;
 
     map.detach();
-    map.setInsertInOrder(true);
     for (quint32 i = 0; i < n; ++i) {
         if (in.status() != QDataStream::Ok)
             break;
@@ -410,7 +395,6 @@ Q_OUTOFLINE_TEMPLATE QDataStream &operator>>(QDataStream &in, QMap<aKey, aT> &ma
         in >> key >> value;
         map.insertMulti(key, value);
     }
-    map.setInsertInOrder(false);
     if (in.status() != QDataStream::Ok)
         map.clear();
     if (oldStatus != QDataStream::Ok)
@@ -431,10 +415,24 @@ Q_OUTOFLINE_TEMPLATE QDataStream &operator<<(QDataStream &out, const QMap<Key, T
     return out;
 }
 
+#ifndef QT_NO_DATASTREAM
+template <class T1, class T2>
+inline QDataStream& operator>>(QDataStream& s, QPair<T1, T2>& p)
+{
+    s >> p.first >> p.second;
+    return s;
+}
+
+template <class T1, class T2>
+inline QDataStream& operator<<(QDataStream& s, const QPair<T1, T2>& p)
+{
+    s << p.first << p.second;
+    return s;
+}
+#endif
+
 #endif // QT_NO_DATASTREAM
 
 QT_END_NAMESPACE
-
-QT_END_HEADER
 
 #endif // QDATASTREAM_H
