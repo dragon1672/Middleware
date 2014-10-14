@@ -11,6 +11,7 @@
 #include "luafunction.h"
 #include "luauserdata.h"
 #include "lualightuserdata.h"
+#include "lstate.h"
 
 class Lua
 {
@@ -25,7 +26,7 @@ class Lua
 
 		lua_newtable(state.get());
 
-		// make the finalizer
+		// make the finalized
 		lua_pushstring(state.get(), "__gc");
 
 		lua_pushlightuserdata(state.get(), (void*)ptr);
