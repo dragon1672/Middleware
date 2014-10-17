@@ -11,7 +11,6 @@
 #include "luafunction.h"
 #include "luauserdata.h"
 #include "lualightuserdata.h"
-#include "lstate.h"
 
 class Lua
 {
