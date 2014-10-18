@@ -18,6 +18,9 @@ class Lua
 	LuaTable registry;
 	LuaTable globals;
 
+public: static const std::string NO_ERRORS;
+private:
+
 	template<typename SIG>
 	LuaFunction<SIG> internalCreateFunction( std::shared_ptr< std::function<SIG> > func, lua_CFunction cfunc)
 	{
